@@ -31,7 +31,7 @@
     "typescript",
     "deno"
   ],
-  "author": "Kyra Lee",
+  "author": "Lemuel Lee Canady, Jr.",
   "license": "MIT",
   "dependencies": {
     "@lhi/tdd-audit": "^1.4.1"
