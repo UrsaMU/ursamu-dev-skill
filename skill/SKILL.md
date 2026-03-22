@@ -248,6 +248,157 @@ export const plugin: IPlugin = {
 };
 ```
 
+---
+
+### Atomic Plugin Architecture
+
+UrsaMU plugins are **self-contained, reversible units**. The architecture enforces a strict separation between three phases:
+
+#### Phase 1 — Module load (side-effect imports)
+
+`index.ts` imports `commands.ts` at the top level. This fires `addCmd()` calls synchronously as the module loads — **before** `init()` is ever called.
+
+```
+Module load order:
+  import "./commands.ts"   → addCmd() calls run immediately (sync)
+  export const plugin      → declares lifecycle hooks
+```
+
+**Rule:** Never call `addCmd()` inside `init()`. Command registration is a module-load side effect, not a lifecycle event.
+
+#### Phase 2 — `init()` (async startup)
+
+`init()` runs after all plugins have been module-loaded. Use it for:
+- Wiring `gameHooks` listeners (always store the handler reference for `remove()`)
+- Calling `registerPluginRoute()` for REST routes
+- Seeding default data or validating config
+- Returning `false` to abort the plugin without crashing the server
+
+```typescript
+// CORRECT: handler stored as named reference so remove() can off() it
+const onLogin = (e: SessionEvent) => { /* ... */ };
+
+init: () => {
+  gameHooks.on("player:login", onLogin);
+  registerPluginRoute("/api/v1/myplugin", routeHandler);
+  return true;
+}
+```
+
+**Rule:** `init()` must return `true` (or `Promise<true>`) on success. Returning `false` disables the plugin gracefully.
+
+#### Phase 3 — `remove()` (teardown / hot-unload)
+
+`remove()` must undo everything `init()` did. This enables hot-unload without a server restart.
+
+```typescript
+remove: () => {
+  gameHooks.off("player:login", onLogin);  // MUST match exact reference used in init()
+  // registerPluginRoute is not reversible — document this if used
+}
+```
+
+**Rules for `remove()`:**
+- Every `gameHooks.on(event, fn)` in `init()` must have a matching `gameHooks.off(event, fn)` in `remove()` using the **same function reference** — not an arrow literal, not a new wrapper.
+- `removePluginRoute` does not exist; REST routes registered in `init()` persist until restart. Note this in the plugin README.
+- Commands registered via `addCmd()` (module-load phase) are also not unregistered — document if the plugin is intended to be hot-removed.
+
+#### Plugin file layout (enforced)
+
+```
+src/plugins/<name>/
+├── index.ts          REQUIRED — exports `plugin: IPlugin`, imports commands.ts
+├── commands.ts       REQUIRED if any commands — all addCmd() calls live here
+├── routes.ts         Optional — registerPluginRoute() calls, imported in init()
+├── <feature>.ts      Optional — domain logic, imported by commands.ts or routes.ts
+├── tests/            Optional — Deno tests for this plugin's units
+│   └── <name>.test.ts
+└── README.md         REQUIRED — see Stage 5c format
+```
+
+Auto-discovery rule: The server scans `src/plugins/*/index.ts` at startup. Any file matching that glob is loaded. The exported `plugin` object is optional — the file's side effects (addCmd calls) run regardless.
+
+#### DBO namespace isolation
+
+Each plugin owns its DBO collections under a namespaced prefix:
+
+```typescript
+// CORRECT: plugin-scoped namespace
+const records = new DBO<IRecord>("myplugin.records");
+
+// WRONG: collides with other plugins or core
+const records = new DBO<IRecord>("records");
+```
+
+Convention: `<pluginName>.<collectionName>` — always lowercase, dot-separated.
+
+#### gameHooks pairing checklist (Stage 2 audit item)
+
+For every `gameHooks.on()` in `init()`, verify:
+- [ ] The handler is a **named const** defined at module scope (not an inline arrow)
+- [ ] `remove()` calls `gameHooks.off()` with the **identical reference**
+- [ ] Handler performs a null-check on any resolved DB object before acting
+- [ ] Handler does not call `u.send()` — it has no socket context; use `gameHooks.emit()` or `mu()` instead
+
+#### Complete minimal plugin (all three phases)
+
+```typescript
+// src/plugins/greeter/commands.ts
+import { addCmd } from "jsr:@ursamu/ursamu";
+import type { IUrsamuSDK } from "jsr:@ursamu/ursamu";
+
+addCmd({
+  name: "+greet",
+  pattern: /^\+greet\s+(.*)/i,
+  lock: "connected",
+  category: "Social",
+  help: `+greet <player>  — Send a greeting to another player.
+
+Examples:
+  +greet Alice    Greet Alice.
+  +greet #5       Greet object #5.`,
+  exec: async (u: IUrsamuSDK) => {
+    const name = u.util.stripSubs(u.cmd.args[0]).trim();
+    const target = await u.util.target(u.me, name, true);
+    if (!target) { u.send("Not found."); return; }
+    u.send(`You wave to ${u.util.displayName(target, u.me)}.`);
+    u.send(`${u.util.displayName(u.me, target)} waves to you.`, target.id);
+  },
+});
+```
+
+```typescript
+// src/plugins/greeter/index.ts
+import "./commands.ts";                          // Phase 1 — module load
+import { gameHooks, registerPluginRoute } from "jsr:@ursamu/ursamu";
+import type { IPlugin, SessionEvent } from "jsr:@ursamu/ursamu";
+
+// Named reference — required for remove() to work
+const onLogin = ({ actorId, actorName }: SessionEvent) => {
+  console.log(`[greeter] ${actorName} connected`);
+};
+
+export const plugin: IPlugin = {
+  name: "greeter",
+  version: "1.0.0",
+  description: "Greeting utilities for players.",
+
+  init: () => {                                  // Phase 2 — async startup
+    gameHooks.on("player:login", onLogin);
+    registerPluginRoute("/api/v1/greeter", async (_req, userId) => {
+      if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ ok: true });
+    });
+    return true;
+  },
+
+  remove: () => {                                // Phase 3 — teardown
+    gameHooks.off("player:login", onLogin);
+    // Note: REST route /api/v1/greeter persists until restart
+  },
+};
+```
+
 ### DBO collection (plugin-scoped storage)
 
 ```typescript
@@ -296,6 +447,11 @@ After writing code, internally verify every item. Output the full **Audit Report
 - [ ] **Correct op string** — `u.db.modify` third arg is `"$set"` | `"$unset"` | `"$inc"` only
 - [ ] **Import path** — internal plugins use relative imports; external use `jsr:@ursamu/ursamu`
 - [ ] **Help text** — `help:` field on every `addCmd` with: (1) syntax line, (2) Switches section if any switches exist, (3) at least two Examples
+- [ ] **Plugin phase discipline** — `addCmd()` calls are in `commands.ts` (module-load), never inside `init()`
+- [ ] **gameHooks pairing** — every `gameHooks.on()` in `init()` has a matching `gameHooks.off()` in `remove()` using an identical named-function reference (not an inline arrow)
+- [ ] **DBO namespace** — all `new DBO<T>(...)` collection names are prefixed with `<pluginName>.`
+- [ ] **REST auth guard** — every `registerPluginRoute` handler returns 401 when `userId` is null before doing any work
+- [ ] **init() return** — `init()` returns `true` (not `void`, not `undefined`)
 
 ### Audit Report format (ALL 6 items required, no exceptions)
 
@@ -403,6 +559,9 @@ describe("<feature> command", () => {
 - [ ] Admin commands reject non-admin callers
 - [ ] `stripSubs` is called before any DB key (no MUSH codes in stored data)
 - [ ] For plugins: `init()` returns `true`; `remove()` does not throw
+- [ ] For plugins: `gameHooks.off()` is called in `remove()` with the same handler reference used in `init()`
+- [ ] For plugins: DBO collection names are namespaced (`<plugin>.<collection>`, verified by asserting the string passed to `new DBO()`)
+- [ ] For REST routes: handler returns 401 when `userId` is `null` before any other logic runs
 
 ### Run tests
 

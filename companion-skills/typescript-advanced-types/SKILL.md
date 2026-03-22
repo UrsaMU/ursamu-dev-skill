@@ -1,11 +1,12 @@
 ---
 name: typescript-advanced-types
 description: "Comprehensive guidance for mastering TypeScript's advanced type system including generics, conditional types, mapped types, template literal types, and utility types for building robust, type-safe applications."
-risk: unknown
+risk: low
 source: community
 date_added: "2026-02-27"
 audited_by: lcanady
-last_audited: "2026-03-21"
+last_audited: "2026-03-22"
+audit_status: safe
 audit_status: safe
 ---
 

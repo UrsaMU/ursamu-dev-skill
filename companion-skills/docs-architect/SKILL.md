@@ -1,11 +1,12 @@
 ---
 name: docs-architect
 description: Creates comprehensive technical documentation from existing codebases. Analyzes architecture, design patterns, and implementation details to produce long-form technical manuals and ebooks.
-risk: unknown
+risk: low
 source: community
 date_added: '2026-02-27'
 audited_by: lcanady
-last_audited: "2026-03-21"
+last_audited: "2026-03-22"
+audit_status: safe
 audit_status: safe
 ---
 

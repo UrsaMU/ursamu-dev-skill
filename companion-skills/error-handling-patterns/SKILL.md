@@ -1,11 +1,12 @@
 ---
 name: error-handling-patterns
 description: "Build resilient applications with robust error handling strategies that gracefully handle failures and provide excellent debugging experiences."
-risk: unknown
+risk: low
 source: community
 date_added: "2026-02-27"
 audited_by: lcanady
-last_audited: "2026-03-21"
+last_audited: "2026-03-22"
+audit_status: safe
 audit_status: safe
 ---
 

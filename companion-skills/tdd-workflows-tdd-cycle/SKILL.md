@@ -1,7 +1,7 @@
 ---
 name: tdd-workflows-tdd-cycle
-description: "Use when working with tdd workflows tdd cycle"
-risk: unknown
+description: "Red-Green-Refactor TDD cycle workflow. Write a failing test, implement the minimum code to pass it, then refactor — enforcing test-first discipline throughout."
+risk: low
 source: community
 date_added: "2026-02-27"
 audited_by: lcanady

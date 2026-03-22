@@ -1,11 +1,12 @@
 ---
 name: game-development
 description: "Game development orchestrator. Routes to platform-specific skills based on project needs."
-risk: unknown
+risk: low
 source: community
 date_added: "2026-02-27"
 audited_by: lcanady
-last_audited: "2026-03-21"
+last_audited: "2026-03-22"
+audit_status: safe
 audit_status: safe
 ---
 
