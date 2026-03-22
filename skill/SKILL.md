@@ -157,7 +157,16 @@ addCmd({
   pattern: /^\+example(?:\/(\S+))?\s*(.*)/i,  // args[0]=switch, args[1]=rest
   lock: "connected",
   category: "General",
-  help: "+example[/<switch>] <arg>  — Brief description.\n\nExamples:\n  +example Alice  Does the thing.",
+  // REQUIRED: full help text — see Stage 5a for format rules.
+  // Must include: syntax line, Switches section (if any), and Examples section.
+  help: `+example[/<switch>] <required> [<optional>]  — Brief description.
+
+Switches:
+  /switch   What this switch does.
+
+Examples:
+  +example Alice           Does the thing.
+  +example/switch Alice    Does the other thing.`,
   exec: async (u: IUrsamuSDK) => {
     const sw  = (u.cmd.args[0] ?? "").toLowerCase().trim();
     const arg = u.util.stripSubs(u.cmd.args[1] ?? "").trim();
@@ -286,7 +295,7 @@ After writing code, internally verify every item. Output the full **Audit Report
 - [ ] **Color reset** — all colored strings end with `%cn`
 - [ ] **Correct op string** — `u.db.modify` third arg is `"$set"` | `"$unset"` | `"$inc"` only
 - [ ] **Import path** — internal plugins use relative imports; external use `jsr:@ursamu/ursamu`
-- [ ] **Help text** — `help?` field set on every `addCmd` registration
+- [ ] **Help text** — `help?` field on every `addCmd` with: (1) syntax line, (2) Switches section if any switches exist, (3) at least two Examples
 
 ### Audit Report format (ALL 6 items required, no exceptions)
 
@@ -409,22 +418,29 @@ deno test --allow-env src/plugins/<name>/tests/
 Every piece of generated code ships with all applicable doc forms.
 Output each section clearly labeled.
 
-### 5a. In-game help text (every `addCmd`)
+### 5a. In-game help text (every `addCmd`) — REQUIRED BLOCKER
 
-Format:
+**Every command must ship with a complete help text. A one-liner stub is a Stage 2 FAIL.**
+
+Required sections:
 
 ```
 +command[/switch] <required> [<optional>]  — One-line description.
 
 Switches:
   /switch   What this switch does.
+  /other    What the other switch does.
 
 Examples:
   +command Alice           Does the thing.
   +command/switch Alice    Does the other thing.
 ```
 
-Embed directly in the `help` field of the `addCmd` registration.
+Rules:
+- **Syntax line** — always first; show all switches in `[/switch]` notation
+- **Switches section** — include if and only if the command has at least one switch
+- **Examples** — at least two realistic examples; use real arg names, not `<foo>`
+- Embed directly in the `help` field of the `addCmd` registration as a template literal
 
 ### 5b. JSDoc (all exports, DBO schemas, plugin objects)
 
@@ -557,6 +573,9 @@ export default () =>
     lock: "connected admin+",
     category: "Admin",
     help: `+gold <player>=<amount>  — Give gold to a player (admin only).
+
+  <player>   Name or #dbref of the target player.
+  <amount>   Positive integer amount of gold to award.
 
 Examples:
   +gold Alice=100    Give Alice 100 gold.
