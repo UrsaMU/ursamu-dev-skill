@@ -10,6 +10,7 @@ Once installed, activate with `/ursamu-dev` in your agent to get a purpose-built
 - [Installation](#installation)
 - [Supported Platforms](#supported-platforms)
 - [What the Skill Does](#what-the-skill-does)
+- [Docs Generation (CI)](#docs-generation-ci)
 - [Available Scripts](#available-scripts)
 - [Contributing](#contributing)
 - [License](#license)
@@ -97,6 +98,84 @@ Every response includes an audit report checking:
 If the audit finds issues, the affected code is rewritten and re-checked before the final output.
 
 The skill also ships a full API reference at `skill/references/api-reference.md` covering all public types, method signatures, event payloads, REST endpoints, and plugin conventions.
+
+---
+
+## Docs Generation (CI)
+
+`ursamu-docs` (`bin/docs.js`) runs any SKILL.md stage against your UrsaMU source
+files and writes documentation artifacts — no agent session required.  It uses
+any OpenAI-compatible LLM provider via a single `openai` SDK client.
+
+### Provider support
+
+| Provider | Flag | Key env var | Default model |
+|---|---|---|---|
+| Anthropic | `--provider anthropic` | `ANTHROPIC_API_KEY` | `claude-sonnet-4-6` |
+| Google | `--provider google` | `GOOGLE_API_KEY` | `gemini-2.0-flash` |
+| OpenAI | `--provider openai` | `OPENAI_API_KEY` | `gpt-4o` |
+| Custom | `--provider custom --base-url <url> --model <id>` | `LLM_API_KEY` | *(required)* |
+
+Provider is **auto-detected** from whichever key env var is set (anthropic → google → openai).
+No `--provider` flag needed in most CI setups.
+
+### Basic usage
+
+```bash
+# Preview what would run — no LLM calls
+node bin/docs.js --dry-run --src src/
+
+# Generate Stage 5 docs to docs/generated/
+ANTHROPIC_API_KEY=sk-ant-... node bin/docs.js --src src/ --out docs/generated
+
+# Use a specific provider and model
+GOOGLE_API_KEY=... node bin/docs.js --provider google --model gemini-2.0-flash --src src/
+
+# Patch JSDoc and help text back into source files (local dev)
+ANTHROPIC_API_KEY=... node bin/docs.js --patch --src src/
+```
+
+### GitHub Actions examples
+
+**Anthropic:**
+```yaml
+- name: Generate UrsaMU docs
+  run: node bin/docs.js --stage 5 --src src/ --out docs/generated
+  env:
+    ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+```
+
+**Google:**
+```yaml
+- name: Generate UrsaMU docs
+  run: node bin/docs.js --stage 5 --src src/ --out docs/generated
+  env:
+    GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+```
+
+**OpenAI:**
+```yaml
+- name: Generate UrsaMU docs
+  run: node bin/docs.js --stage 5 --src src/ --out docs/generated
+  env:
+    OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+```
+
+### Output layout
+
+```
+docs/generated/
+  commands/
+    <name>/
+      help.md       ← 5a: in-game help text
+      jsdoc.md      ← 5b: JSDoc block
+  plugins/
+    <name>/
+      help.md
+      jsdoc.md
+      README.md     ← 5c: plugin README
+      routes.md     ← 5d: REST route contracts
+```
 
 ---
 
