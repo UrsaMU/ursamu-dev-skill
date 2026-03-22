@@ -34,7 +34,7 @@ Stage 0 — Design    → REQUIRED output: Design Plan + Decision Log
 Stage 1 — Generate  → REQUIRED output: working code
 Stage 2 — Audit     → REQUIRED output: Audit Report (all 6 items)
 Stage 3 — Refine    → REQUIRED output: fixed code (or "No issues found")
-Stage 4 — Test      → REQUIRED output: passing Deno test file
+Stage 4 — Test      → REQUIRED output: passing Deno test file + /tdd-audit remediation
 Stage 5 — Docs      → REQUIRED output: help text + JSDoc + README (if plugin)
 ```
 
@@ -295,7 +295,7 @@ After writing code, internally verify every item. Output the full **Audit Report
 - [ ] **Color reset** — all colored strings end with `%cn`
 - [ ] **Correct op string** — `u.db.modify` third arg is `"$set"` | `"$unset"` | `"$inc"` only
 - [ ] **Import path** — internal plugins use relative imports; external use `jsr:@ursamu/ursamu`
-- [ ] **Help text** — `help?` field on every `addCmd` with: (1) syntax line, (2) Switches section if any switches exist, (3) at least two Examples
+- [ ] **Help text** — `help:` field on every `addCmd` with: (1) syntax line, (2) Switches section if any switches exist, (3) at least two Examples
 
 ### Audit Report format (ALL 6 items required, no exceptions)
 
@@ -410,6 +410,30 @@ describe("<feature> command", () => {
 deno test --allow-env tests/
 deno test --allow-env src/plugins/<name>/tests/
 ```
+
+### Stage 4b — TDD Remediation (MANDATORY — do not skip)
+
+After all Stage 4 tests pass, invoke `/tdd-audit` on the generated code.
+
+**This is not optional.** Remediation catches vulnerabilities that the Stage 2 audit cannot — it proves fixes hold under adversarial inputs by writing exploit tests first (Red), then verifying the patch closes them (Green).
+
+```
+/tdd-audit
+```
+
+The `/tdd-audit` protocol will:
+1. **Explore** — scan the generated code for OWASP-class vulnerabilities (injection, broken auth, insecure DB ops, sandbox escapes, permission bypasses)
+2. **Report** — present a severity-ranked Audit Report (CRITICAL → HIGH → MEDIUM → LOW) and wait for confirmation
+3. **Remediate** — for each confirmed issue, run the full Red-Green-Refactor loop:
+   - Write an **exploit test** that reproduces the vulnerability (must fail — Red)
+   - Apply the **minimum patch** that closes it (Green — exploit test passes)
+   - Re-run the **full test suite** to verify no regressions (Refactor)
+4. **Harden** — check security headers, rate limits, dependency CVEs, secret leakage, and error handling
+5. **Summary** — produce a final Remediation Summary table
+
+**Do not advance to Stage 5 until `/tdd-audit` completes and all CRITICAL and HIGH items are closed.**
+
+> **Platform note:** `/tdd-audit` requires the `@lhi/tdd-audit` skill, which is installed automatically when using `npx @lhi/ursamu-dev` (Claude Code target). On other platforms (OpenCode, Gemini CLI, Cursor, Codex), perform the Red-Green-Refactor remediation loop manually using the same protocol: write exploit test → patch → verify full suite passes.
 
 ---
 
@@ -623,7 +647,7 @@ Examples:
 
 `Stage 3: No issues found.`
 
-### Stage 4 — Tests
+### Stage 4 — Tests + Remediation
 
 ```typescript
 // tests/gold.test.ts
@@ -666,8 +690,25 @@ describe("+gold command", () => {
     assertStringIncludes(u._sent[0], "Permission denied");
     assertEquals(u._dbCalls.length, 0);
   });
+
+  it("input sanitization — MUSH codes stripped before target lookup", async () => {
+    const alice = mockPlayer({ id: "5", name: "Alice" });
+    // Name arg contains MUSH color codes — must be stripped before use
+    const u = mockU({ args: ["%chAlice%cn", "100"], targetResult: alice });
+    await execGold(u);
+    // DB call should have been made (target resolved), not blocked by raw color codes
+    assertEquals(u._dbCalls[0], ["5", "$inc", { "data.gold": 100 }]);
+  });
 });
 ```
+
+After all tests pass, invoke the TDD remediation audit:
+
+```
+/tdd-audit
+```
+
+This triggers the full Red-Green-Refactor exploit loop. Do not advance to Stage 5 until all CRITICAL and HIGH items are closed.
 
 ### Stage 5 — Docs
 
