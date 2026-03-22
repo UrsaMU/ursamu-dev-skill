@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { cpSync, mkdirSync, existsSync, readdirSync, writeFileSync, readFileSync } from "fs";
+import { cpSync, mkdirSync, existsSync, readdirSync, writeFileSync, readFileSync, realpathSync } from "fs";
 import { join, dirname, resolve } from "path";
 import { homedir } from "os";
 import { fileURLToPath } from "url";
@@ -127,7 +127,10 @@ description: Generates idiomatic TypeScript/Deno code for UrsaMU MU* server usin
 
 // ── Main (guarded — safe to import for testing) ────────────────────────────
 
-const isMain = process.argv[1] === __filename;
+const isMain = (() => {
+  try { return realpathSync(process.argv[1]) === realpathSync(__filename); }
+  catch { return false; }
+})();
 
 if (isMain) {
   const args = process.argv.slice(2);
