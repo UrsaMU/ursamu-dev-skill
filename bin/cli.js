@@ -164,7 +164,7 @@ Examples:
   npx @lhi/ursamu-dev --claude --opencode
   npx @lhi/ursamu-dev --claude --no-companions
 `);
-    process.exit(0);
+    process.stdout.write("", () => process.exit(0));
   }
 
   const DRY_RUN       = args.includes("--dry-run");
@@ -223,11 +223,10 @@ Examples:
     console.log();
   }
 
-  if (passed === targets.size) {
-    console.log(`Done. Run /ursamu-dev in your agent to activate.\n`);
-    process.exit(0);
-  } else {
-    console.log(`Completed with errors (${passed}/${targets.size} installed).\n`);
-    process.exit(1);
-  }
+  const exitCode = passed === targets.size ? 0 : 1;
+  const finalMsg = exitCode === 0
+    ? `Done. Run /ursamu-dev in your agent to activate.\n`
+    : `Completed with errors (${passed}/${targets.size} installed).\n`;
+
+  process.stdout.write(finalMsg, () => process.exit(exitCode));
 }
