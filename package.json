@@ -9,10 +9,12 @@
   },
   "files": [
     "bin/",
-    "skill/"
+    "skill/",
+    "companion-skills/"
   ],
   "scripts": {
-    "test": "node bin/cli.js --dry-run --all"
+    "test": "node bin/cli.js --dry-run --all",
+    "test:security": "jest --testPathPatterns=__tests__/security --forceExit"
   },
   "keywords": [
     "ursamu",
