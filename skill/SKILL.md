@@ -3,7 +3,7 @@ name: ursamu-dev
 description: "Full-cycle UrsaMU development: design → generate → audit → refine → test → docs. Covers commands, plugins, system scripts, REST routes, and game hooks with integrated security validation."
 risk: low
 source: local
-date_added: "2026-03-21"
+date_added: "2026-03-22"
 ---
 
 ## Use this skill when
@@ -20,6 +20,28 @@ date_added: "2026-03-21"
 
 - Working on non-UrsaMU TypeScript/Deno projects
 - The task is purely about the Discord bot (use a different skill)
+
+---
+
+## ⚠ Read the API reference first — always
+
+`references/api-reference.md` is the **authoritative source** for every UrsaMU
+type, method signature, import path, event payload, and pattern. It is generated
+directly from the engine source and is always current.
+
+**Before writing a single line of code, open `references/api-reference.md`.**
+Refer back to it whenever you need:
+- Any `u.*` method signature (db, util, chan, bb, auth, sys, mail, ui, events)
+- `IDBObj`, `ICmd`, `IPlugin`, `IUrsamuSDK`, or any other interface
+- `gameHooks` event names and their payload types
+- Lock expression syntax, MUSH color codes, pattern conventions
+- Plugin coupling patterns (tight vs. loose via `gameHooks` declaration merging)
+- REST API endpoints and auth requirements
+- rhost-vision layout helper signatures
+
+Do not guess or reconstruct these from memory — the reference has the exact
+signatures. If something in this skill and the reference conflict, **the
+reference wins**.
 
 ---
 
@@ -47,10 +69,11 @@ Your role here is design facilitator: slow down just enough to get it right.
 
 ### 0a. Understand context first
 
-Before asking any questions, review what already exists:
-- Read relevant files in `src/commands/`, `src/plugins/`, `system/scripts/`
-- Identify what is being proposed vs. what already exists
-- Note implicit constraints (lock levels, sandbox restrictions, existing DB schemas)
+Before asking any questions:
+1. **Open `references/api-reference.md`** — review the relevant sections for the feature being designed (SDK methods, event payloads, lock expressions, plugin patterns)
+2. Read relevant files in `src/commands/`, `src/plugins/`, `system/scripts/`
+3. Identify what is being proposed vs. what already exists
+4. Note implicit constraints (lock levels, sandbox restrictions, existing DB schemas)
 
 ### 0b. Clarify requirements (one question at a time)
 
@@ -116,8 +139,11 @@ Assumptions:  <explicit list>
 ## Stage 1 — Generate
 
 Write code satisfying the confirmed Design Plan using the patterns below.
-Full API reference is in `references/api-reference.md` — open it for any
-type, method signature, or import path not covered here.
+
+> **Open `references/api-reference.md` now** if you have not already. It
+> contains every type definition, method signature, import path, and pattern
+> used below. The snippets in this section are *quick reminders*, not
+> substitutes — always verify against the reference before writing final code.
 
 ### Project layout
 
@@ -881,7 +907,19 @@ This triggers the full Red-Green-Refactor exploit loop. Do not advance to Stage 
 
 ## Quick reference links
 
-- Full API (types, all methods): `references/api-reference.md`
-- rhost-vision layout helpers: see api-reference.md § rhost-vision Plugin
-- gameHooks event payloads: see api-reference.md § GameHooks
-- REST endpoints: see api-reference.md § REST API
+> `references/api-reference.md` is the **single source of truth** for all
+> UrsaMU APIs. It mirrors `docs/llms.md` in the engine repo and is kept in sync
+> with every release. Read it first, read it often.
+
+| Topic | Section in api-reference.md |
+|-------|----------------------------|
+| All `u.*` methods | `IUrsamuSDK`, `u.db`, `u.util`, `u.chan`, `u.bb`, `u.auth`, `u.sys`, `u.mail`, `u.ui`, `u.events` |
+| Types & interfaces | `IDBObj`, `ICmd`, `IPlugin`, `IUrsamuSDK` |
+| gameHooks events + payloads | `GameHooks — Engine Event Bus` |
+| Plugin coupling (tight vs loose) | `Plugin Coupling Patterns` |
+| Lock expressions | `ICmd — Command Registration` |
+| MUSH color codes | `MUSH Color Codes` |
+| REST core endpoints | `REST API — Core Endpoints` |
+| rhost-vision layout helpers | `rhost-vision Plugin — Layout Utilities` |
+| Project file layout | `Project Layout` |
+| Common patterns | `Common Patterns` |

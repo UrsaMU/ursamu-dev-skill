@@ -439,17 +439,46 @@ addCmd({
 });
 ```
 
+### Pattern conventions
+
+```typescript
+// No args:        /^inventory$/i
+// One arg:        /^look\s+(.*)/i          → args[0]
+// Switch + arg:   /^\+cmd(?:\/(\S+))?\s*(.*)/i  → args[0]=switch, args[1]=rest
+// Two parts:      /^@name\s+(.+)=(.+)/i    → args[0], args[1]
+```
+
+### Lock expressions
+
+| Expression | Meaning |
+|-----------|---------|
+| `""` | No restriction (login screen) |
+| `"connected"` | Must be logged in |
+| `"connected builder+"` | Logged in + builder or higher |
+| `"connected admin+"` | Logged in + admin or higher |
+| `"connected wizard"` | Logged in + wizard |
+| `"#42"` | Must be object #42 |
+| `"player+"` | Has player flag or higher |
+| `"!dark"` | Must NOT have dark flag |
+| `"wizard\|admin"` | wizard OR admin |
+
 ---
 
 ## IPlugin — Plugin Lifecycle
 
 ```typescript
+interface IPluginDependency {
+  name:    string;   // must match another plugin's IPlugin.name exactly
+  version: string;   // semver range, e.g. "^1.0.0", ">=2.1.0"
+}
+
 interface IPlugin {
-  name:         string;
-  version:      string;
-  description?: string;
-  init?:        () => boolean | Promise<boolean>;  // return false to abort
-  remove?:      () => void | Promise<void>;
+  name:          string;
+  version:       string;
+  description?:  string;
+  dependencies?: IPluginDependency[];  // see Plugin Coupling Patterns below
+  init?:         () => boolean | Promise<boolean>;  // return false to abort
+  remove?:       () => void | Promise<void>;
 }
 
 // index.ts
@@ -479,9 +508,15 @@ Plugin is auto-discovered when placed in `src/plugins/<name>/index.ts`.
 
 Registers commands. Call at module level in `commands.ts`, not inside `init()`.
 
+```typescript
+import { addCmd } from "jsr:@ursamu/ursamu";
+addCmd({ name: "+foo", pattern: /^\+foo/i, exec: (u) => u.send("foo") });
+```
+
 ### `registerPluginRoute(prefix, handler)`
 
 ```typescript
+import { registerPluginRoute } from "jsr:@ursamu/ursamu";
 registerPluginRoute("/api/v1/myplugin", async (req, userId) => {
   return Response.json({ ok: true });
 });
@@ -491,19 +526,24 @@ registerPluginRoute("/api/v1/myplugin", async (req, userId) => {
 ### `DBO<T>` — Plugin database collections
 
 ```typescript
+import { DBO } from "jsr:@ursamu/ursamu";
+
+interface INote { id: string; playerId: string; text: string; date: number; }
 const notes = new DBO<INote>("myplugin.notes");
 
 await notes.create({ id: crypto.randomUUID(), playerId: u.me.id, text: "hello", date: Date.now() });
-const all  = await notes.find({ playerId: u.me.id });
-const one  = await notes.findOne({ id: noteId });
+const all = await notes.find({ playerId: u.me.id });
+const one = await notes.findOne({ id: noteId });
 await notes.update({ id: noteId }, { text: "updated" });
 await notes.delete({ id: noteId });
-const all  = await notes.all();
+const all = await notes.all();
 ```
 
-### `dbojs` — Game objects (outside command context)
+### `dbojs` — Game objects
 
 ```typescript
+import { dbojs } from "jsr:@ursamu/ursamu";
+
 const players = await dbojs.queryAll((o) => o.flags.has("player"));
 const room    = await dbojs.queryOne((o) => o.id === "1");
 ```
@@ -511,15 +551,39 @@ const room    = await dbojs.queryOne((o) => o.id === "1");
 ### `createObj(template)` — Outside command context
 
 ```typescript
+import { createObj } from "jsr:@ursamu/ursamu";
 const room = await createObj({
   name: "The Void", flags: new Set(["room"]),
   state: { desc: "Empty." }, contents: [],
 });
 ```
 
+### `mu()` — Start the server
+
+```typescript
+import { mu } from "jsr:@ursamu/ursamu";
+await mu();
+```
+
 ---
 
 ## GameHooks — Engine Event Bus
+
+`GameHookMap` is an **interface** — plugins can extend it via TypeScript
+declaration merging to add their own typed events without modifying the engine:
+
+```typescript
+// In your plugin's augmentation file:
+import type { IJob } from "./types.ts";
+declare module "../../../services/Hooks/GameHooks.ts" {
+  interface GameHookMap {
+    "job:created": (job: IJob) => void | Promise<void>;
+  }
+}
+```
+
+Once imported, all `gameHooks.on/off/emit` calls become fully typed for the
+new event across the entire codebase.
 
 ```typescript
 import { gameHooks } from "jsr:@ursamu/ursamu";
@@ -574,7 +638,7 @@ u.send(`You have ${gold} gold.`);
 ### ESM import restrictions in scripts
 
 Workers support standard ESM imports BUT:
-- JSR sub-path imports (`jsr:@std/fmt/printf`) do NOT work — use `u.util.sprintf` instead
+- JSR sub-path imports (`jsr:@std/fmt/printf`) do NOT work — use u.util.sprintf instead
 - Cannot import from `jsr:@ursamu/ursamu` inside scripts — use the `u` global
 
 ---
@@ -598,68 +662,92 @@ Workers support standard ESM imports BUT:
 | `%t` | Tab |
 | `%b` | Space |
 
+```typescript
+u.send("%ch%cyWelcome!%cn");
+u.send(`%ch%cr[ALERT]%cn Server restarting.`);
+u.send(u.util.center("%ch=== NEWS ===%cn", 78, "="));
+```
+
 Strip all codes: `u.util.stripSubs(str)` — use before storing or measuring length.
 
 ---
 
-## rhost-vision Plugin — Layout Utilities
+## Project Layout
 
-```bash
-ursamu plugin install https://github.com/chogan1981/ursamu-rhost-vision
 ```
-
-Once installed at `src/plugins/rhost-vision/`:
-
-```typescript
-import { header, footer, divider, wrap, table, bar, sheet, nColumns, visibleLength }
-  from "../../plugins/rhost-vision/layout.ts";
-import { defaultTheme } from "../../plugins/rhost-vision/theme.ts";
+src/
+  @types/          Type definitions (IDBObj, ICmd, IPlugin, etc.)
+  commands/        Native addCmd registrations (admin, mail, help, etc.)
+  plugins/         Plugin directory — each sub-folder is a plugin
+  routes/          HTTP route handlers (scenes, mail, wiki, etc.)
+  services/        Core services (Database, Sandbox, GameClock, Hooks, etc.)
+  utils/           Shared utilities (flags, target, locks, etc.)
+system/
+  scripts/         Auto-loaded scripts (one per command: look.ts, say.ts, etc.)
+  help/            In-game help text files
+config/            Game configuration (config.json / config.toml)
+docs/              Documentation site (Lume static site generator)
+tests/             Test suite (Deno test)
 ```
-
-| Function | Signature | Returns |
-|----------|-----------|---------|
-| `visibleLength(s)` | `(s: string) => number` | Visible char count (no MUSH codes) |
-| `header(title, theme)` | | Full-width `=== Title ===` header |
-| `footer(theme)` | | Full-width `===...` footer |
-| `divider(label\|null, theme)` | | Full-width `--- Label ---` divider |
-| `wrap(text, width, indent?)` | | `string[]` — word-wrapped lines |
-| `bar(filled, total, barWidth, theme)` | | Progress bar string |
-| `sheet(fields, labelWidth, theme)` | | Character sheet with bars |
-| `table(headers, rows, colWidths, width, theme)` | | Bordered table |
-| `nColumns(items, n, totalWidth, gap?)` | | `string[]` — N-column layout |
-
-Sandbox scripts use `inlineUtils(theme)` to embed helpers as generated JS.
-
----
-
-## REST API — Core Endpoints
-
-Auth: `Authorization: Bearer <jwt>`
-
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| `POST` | `/api/v1/login` | No | Login → JWT |
-| `GET` | `/api/v1/who` | Yes | Online players |
-| `GET` | `/api/v1/players/:id` | Yes | Player info |
-| `GET` | `/api/v1/scenes` | Yes | Scene list |
-| `POST` | `/api/v1/scenes` | Yes | Open scene |
-| `GET` | `/api/v1/scenes/:id` | Yes | Scene detail |
-| `PATCH` | `/api/v1/scenes/:id` | Yes | Update scene |
-| `POST` | `/api/v1/scenes/:id/pose` | Yes | Post to scene |
-| `GET` | `/api/v1/scenes/:id/export` | Yes | Export (`?format=markdown\|json`) |
-| `GET` | `/api/v1/mail` | Yes | Inbox |
-| `POST` | `/api/v1/mail` | Yes | Send mail |
-| `GET` | `/api/v1/mail/:id` | Yes | Read message |
-| `DELETE` | `/api/v1/mail/:id` | Yes | Delete message |
-| `GET` | `/api/v1/wiki` | Yes | List/search wiki |
-| `GET` | `/api/v1/wiki/:path` | Yes | Read page |
-| `POST` | `/api/v1/wiki` | Staff | Create page |
-| `PATCH` | `/api/v1/wiki/:path` | Staff | Update page |
-| `DELETE` | `/api/v1/wiki/:path` | Staff | Delete page |
 
 ---
 
 ## Common Patterns
+
+### Permission guard (admin/wizard)
+
+```typescript
+const isAdmin = u.me.flags.has("admin") ||
+                u.me.flags.has("wizard") ||
+                u.me.flags.has("superuser");
+if (!isAdmin) { u.send("Permission denied."); return; }
+```
+
+### Edit permission check
+
+```typescript
+if (!(await u.canEdit(u.me, target))) {
+  u.send("Permission denied.");
+  return;
+}
+```
+
+### Standard switch-based command
+
+```typescript
+addCmd({
+  name: "+cmd",
+  pattern: /^\+cmd(?:\/(\S+))?\s*(.*)/i,
+  lock: "connected",
+  exec: async (u) => {
+    const sw  = (u.cmd.args[0] || "").toLowerCase().trim();
+    const arg = (u.cmd.args[1] || "").trim();
+    if (!sw || sw === "list") { /* default */ return; }
+    if (sw === "view")  { /* ... */ return; }
+    if (sw === "create") { /* ... */ return; }
+    u.send(`Unknown switch "/${sw}".`);
+  },
+});
+```
+
+### Read and write a state field
+
+```typescript
+// READ
+const gold = (u.me.state.gold as number) || 0;
+
+// WRITE (spread to preserve existing fields)
+await u.db.modify(u.me.id, "$set", { "data.gold": gold + 10 });
+
+// Or write the entire state object (safe for small objects):
+await u.db.modify(u.me.id, "$set", { data: { ...u.me.state, gold: gold + 10 } });
+```
+
+### Increment a counter
+
+```typescript
+await u.db.modify(u.me.id, "$inc", { "data.deaths": 1 });
+```
 
 ### Multi-column output table
 
@@ -688,6 +776,177 @@ registerPluginRoute("/api/v1/myplugin", async (req, userId) => {
 });
 ```
 
+### Listen for a game hook in a plugin
+
+```typescript
+import { gameHooks } from "jsr:@ursamu/ursamu";
+import type { SessionEvent } from "jsr:@ursamu/ursamu";
+
+const onLogin = ({ actorId, actorName }: SessionEvent) => {
+  console.log(`[myplugin] ${actorName} connected`);
+};
+
+export const plugin: IPlugin = {
+  name: "myplugin", version: "1.0.0",
+  init: () => { gameHooks.on("player:login", onLogin); return true; },
+  remove: () => { gameHooks.off("player:login", onLogin); },
+};
+```
+
 ---
 
-*Last updated: 2026-03-21*
+## REST API — Core Endpoints
+
+Authentication: pass `Authorization: Bearer <jwt>` header.
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `POST` | `/api/v1/login` | No | Login — returns JWT |
+| `GET` | `/api/v1/who` | Yes | Online players list |
+| `GET` | `/api/v1/players/:id` | Yes | Player info |
+| `GET` | `/api/v1/scenes` | Yes | Scene list |
+| `POST` | `/api/v1/scenes` | Yes | Open a new scene |
+| `GET` | `/api/v1/scenes/:id` | Yes | Scene detail |
+| `PATCH` | `/api/v1/scenes/:id` | Yes | Update scene |
+| `POST` | `/api/v1/scenes/:id/pose` | Yes | Post to scene |
+| `GET` | `/api/v1/scenes/:id/export` | Yes | Export scene (`?format=markdown\|json`) |
+| `GET` | `/api/v1/mail` | Yes | Inbox list |
+| `POST` | `/api/v1/mail` | Yes | Send mail |
+| `GET` | `/api/v1/mail/:id` | Yes | Read message |
+| `DELETE` | `/api/v1/mail/:id` | Yes | Delete message |
+| `GET` | `/api/v1/wiki` | Yes | List/search wiki |
+| `GET` | `/api/v1/wiki/:path` | Yes | Read page |
+| `POST` | `/api/v1/wiki` | Staff | Create page |
+| `PATCH` | `/api/v1/wiki/:path` | Staff | Update page |
+| `DELETE` | `/api/v1/wiki/:path` | Staff | Delete page |
+
+---
+
+## rhost-vision Plugin — Layout Utilities
+
+`rhost-vision` is a community plugin maintained by
+[chogan1981](https://github.com/chogan1981/ursamu-rhost-vision). Install it via
+the UrsaMU CLI:
+
+```bash
+ursamu plugin install https://github.com/chogan1981/ursamu-rhost-vision
+```
+
+Once installed at `src/plugins/rhost-vision/`, `layout.ts` provides typed helpers.
+Native commands can import from it directly:
+
+```typescript
+import { header, footer, divider, wrap, table, bar, sheet, nColumns, visibleLength }
+  from "../../plugins/rhost-vision/layout.ts";
+import { defaultTheme } from "../../plugins/rhost-vision/theme.ts";
+```
+
+Sandbox scripts use `inlineUtils(theme)` to embed helpers as generated JS.
+
+| Function | Signature | Returns |
+|----------|-----------|---------|
+| `visibleLength(s)` | `(s: string) => number` | Visible char count (no MUSH codes) |
+| `header(title, theme)` | | Full-width `=== Title ===` header |
+| `footer(theme)` | | Full-width `===...` footer |
+| `divider(label\|null, theme)` | | Full-width `--- Label ---` divider |
+| `wrap(text, width, indent?)` | | `string[]` — word-wrapped lines |
+| `bar(filled, total, barWidth, theme)` | | Progress bar string |
+| `sheet(fields, labelWidth, theme)` | | Character sheet with bars |
+| `table(headers, rows, colWidths, width, theme)` | | Bordered table |
+| `nColumns(items, n, totalWidth, gap?)` | | `string[]` — N-column layout |
+
+---
+
+---
+
+## Plugin Coupling Patterns
+
+### Rule: never use `@ursamu/ursamu/*` sub-paths inside `src/plugins/`
+
+When running the engine directly, Deno resolves `@ursamu/ursamu` from the
+local `deno.json` — not from JSR. A sub-path export that is absent from the
+local `deno.json` will halt startup even if the published JSR version has it.
+
+| Context | Correct import |
+|---|---|
+| Plugin importing another **bundled** plugin | Relative: `../../jobs/mod.ts` |
+| External plugin (separate repo) importing engine types | Sub-path: `@ursamu/ursamu/jobs` |
+
+### Two strategies for plugin-to-plugin communication
+
+**Tight coupling — use `dependencies`**
+
+When plugin B genuinely cannot function without plugin A's API (types, DB
+access, configuration):
+
+```typescript
+// discord/src/index.ts
+export const plugin: IPlugin = {
+  name: "discord",
+  version: "1.1.0",
+  dependencies: [{ name: "chargen", version: ">=1.0.0" }],
+  // chargen is guaranteed to be init()'d before discord
+};
+```
+
+Startup behavior:
+- Dep missing or version out of range → **throws, server halts**
+- Dep's `init()` returned false → dependent is cascade-skipped, server continues
+- Circular dependency → **throws, server halts** (fix: use `gameHooks` instead)
+
+**Loose coupling — use `gameHooks` declaration merging**
+
+When plugin B only needs to *react* to plugin A's lifecycle events (no types,
+no direct API calls):
+
+```typescript
+// In plugin A (jobs) — game-hooks-augment.ts:
+declare module "../../../services/Hooks/GameHooks.ts" {
+  interface GameHookMap {
+    "job:created": (job: IJob) => void | Promise<void>;
+  }
+}
+
+// In plugin A's hooks.ts — bridge emit to gameHooks:
+await gameHooks.emit("job:created", job);   // fires AFTER jobHooks subscribers
+
+// In plugin B (discord) — no jobs import needed:
+import { gameHooks } from "@ursamu/ursamu";
+gameHooks.on("job:created", async (job) => { /* post to webhook */ });
+```
+
+Loose coupling means:
+- Plugin B has no `dependencies` entry for plugin A
+- Plugin B works whether or not plugin A is installed
+- No import resolution errors regardless of JSR publish state
+
+### Case study: discord → jobs import error
+
+**Symptom** (`deno task start`):
+```
+Error loading plugin from .../discord/index.ts:
+  TypeError: Unknown export './jobs' for '@ursamu/ursamu'.
+```
+
+**Root cause**: `discord/src/job-hooks.ts` imported `jobHooks` from
+`@ursamu/ursamu/jobs`. When running the engine directly, `@ursamu/ursamu`
+resolves to the local `deno.json` whose exports did not include `./jobs`.
+
+**Wrong fix**: Add `"./jobs": "..."` to `deno.json` exports and leave the
+cross-plugin import as-is. This silences the error locally but doesn't address
+the architectural problem.
+
+**Right fix (applied)**:
+1. `GameHookMap` changed from `type` to `interface` — enables declaration merging.
+2. Jobs plugin added `game-hooks-augment.ts` extending `GameHookMap` with
+   `job:created`, `job:commented`, etc.
+3. Jobs `jobHooks.emit()` now also bridges to `gameHooks.emit()`.
+4. Discord `job-hooks.ts` uses `gameHooks.on("job:created", ...)` —
+   no import from the jobs plugin at all.
+
+Result: discord no longer declares a `jobs` dependency. It reacts to job
+events whether or not it knows jobs is installed.
+
+---
+
+*Generated from `src/@types/UrsamuSDK.ts`, `src/services/Sandbox/worker.ts`, and source review. Last updated: 2026-03-22.*
