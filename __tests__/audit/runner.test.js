@@ -83,6 +83,30 @@ describe("runAudit", () => {
     );
   });
 
+  it("reports check-02 from check-02-no-canedit.ts", () => {
+    const { violations } = runAudit(join(FIXTURES, "failing"));
+    assert.ok(
+      violations.some(v => v.check === "check-02"),
+      "Expected check-02 violation"
+    );
+  });
+
+  it("reports check-07 from check-07-no-reset.ts", () => {
+    const { violations } = runAudit(join(FIXTURES, "failing"));
+    assert.ok(
+      violations.some(v => v.check === "check-07"),
+      "Expected check-07 violation"
+    );
+  });
+
+  it("reports check-08 from check-08-bad-op.ts", () => {
+    const { violations } = runAudit(join(FIXTURES, "failing"));
+    assert.ok(
+      violations.some(v => v.check === "check-08"),
+      "Expected check-08 violation"
+    );
+  });
+
   it("throws for a path outside cwd", () => {
     assert.throws(
       () => runAudit("/tmp/__ursamu_test__"),

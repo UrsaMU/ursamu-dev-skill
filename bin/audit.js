@@ -41,6 +41,7 @@ import { runAudit } from "../lib/audit/runner.js";
 import { formatReport, exitCode } from "../lib/audit/reporter.js";
 import { fixFile, classifyViolations } from "../lib/audit/fixer.js";
 import { startWatch } from "../lib/audit/watcher.js";
+import { explain, EXPLANATIONS } from "../lib/audit/explanations.js";
 
 // ── Arg parsing ──────────────────────────────────────────────────────────────
 
@@ -56,18 +57,28 @@ export function parseArgs(argv) {
     noHints: false,
     fix:     false,
     watch:   false,
+    explain: null,
     help:    false,
   };
 
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
+
+    const next = () => {
+      if (i + 1 >= args.length) {
+        throw new Error(`${a} requires a value but was the last argument.`);
+      }
+      return args[++i];
+    };
+
     switch (a) {
-      case "--json":       opts.json    = true;  break;
-      case "--no-hints":   opts.noHints = true;  break;
-      case "--fix":        opts.fix     = true;  break;
-      case "--watch":      opts.watch   = true;  break;
+      case "--json":       opts.json    = true;       break;
+      case "--no-hints":   opts.noHints = true;       break;
+      case "--fix":        opts.fix     = true;       break;
+      case "--watch":      opts.watch   = true;       break;
+      case "--explain":    opts.explain = next();     break;
       case "--help":
-      case "-h":           opts.help    = true;  break;
+      case "-h":           opts.help    = true;       break;
       default:
         if (a.startsWith("--")) {
           process.stderr.write(`Unknown option: ${a}\n`);
@@ -91,28 +102,34 @@ Arguments:
   path          Directory to scan for .ts/.js files (default: ./src)
 
 Options:
-  --fix         Auto-repair fixable violations in-place:
-                  check-09  adds missing jsr: import prefix
-                  check-15  inserts return true; into init()
-                Structural violations still require manual fixes.
-  --watch       Watch src directory and re-run audit on every save.
-                Prints a compact diff of added/resolved violations.
-  --json        Output machine-readable JSON
-  --no-hints    Suppress HINT-level findings (hints do not affect exit code)
-  --help        Show this help
+  --fix              Auto-repair fixable violations in-place:
+                       check-09  adds missing jsr: import prefix
+                       check-15  inserts return true; into init()
+                     Structural violations still require manual fixes.
+  --watch            Watch src directory and re-run audit on every save.
+                     Prints a compact diff of added/resolved violations.
+  --explain <id>     Print full explanation for a check ID (e.g. check-02).
+                     Use "all" to list all checks with one-line summaries.
+  --json             Output machine-readable JSON
+  --no-hints         Suppress HINT-level findings (hints do not affect exit code)
+  --help             Show this help
 
 Checks performed (no LLM required):
-  check-01  Input sanitization   — stripSubs() before DB writes [warn]
-  check-03  Atomic DB writes     — only $set/$inc/$unset as op   [error]
-  check-04  Null guard           — util.target() result guarded  [hint]
-  check-06  Sandbox safety       — no Deno/fetch in scripts/     [error]
-  check-09  Import path          — jsr: prefix on @ursamu pkg    [warn]  ✓ fixable
-  check-10  Help text            — every addCmd has help+Examples [error/warn]
-  check-11  Phase discipline     — no addCmd() inside init()     [error]
-  check-12  gameHooks pairing    — every on() has off() in remove [error]
-  check-13  DBO namespace        — collection names prefixed     [error]
-  check-14  REST auth guard      — if (!userId) → 401 first      [error]
-  check-15  init() return        — init() returns true           [error]  ✓ fixable
+  check-01  Input sanitization   — stripSubs() before DB writes        [warn]
+  check-02  canEdit guard        — permission check before DB write     [warn]
+  check-03  Atomic DB writes     — blacklist: $push/$pull/etc. banned   [error]
+  check-04  Null guard           — util.target() result guarded         [hint]
+  check-05  Admin flags guard    — flags.has() in admin exec()          [hint]
+  check-06  Sandbox safety       — no Deno/fetch in scripts/            [error]
+  check-07  Color reset          — colored strings end with %cn         [warn]
+  check-08  Op string whitelist  — only $set/$inc/$unset permitted      [error]
+  check-09  Import path          — jsr: prefix on @ursamu pkg           [warn]  ✓ fixable
+  check-10  Help text            — every addCmd has help+Examples       [error/warn]
+  check-11  Phase discipline     — no addCmd() inside init()            [error]
+  check-12  gameHooks pairing    — every on() has off() in remove       [error]
+  check-13  DBO namespace        — collection names prefixed            [error]
+  check-14  REST auth guard      — if (!userId) → 401 first             [error]
+  check-15  init() return        — init() returns true                  [error]  ✓ fixable
 
 Exit codes:
   0   Clean (no errors or warnings)
@@ -120,11 +137,13 @@ Exit codes:
   2   Fatal error
 
 Examples:
-  ursamu-audit                   Scan ./src
-  ursamu-audit src/plugins/bbs   Scan one plugin
-  ursamu-audit --fix             Auto-repair check-09 and check-15
-  ursamu-audit --watch           Re-run on every file save
-  ursamu-audit --json            Machine-readable output for CI
+  ursamu-audit                        Scan ./src
+  ursamu-audit src/plugins/bbs        Scan one plugin
+  ursamu-audit --fix                  Auto-repair check-09 and check-15
+  ursamu-audit --watch                Re-run on every file save
+  ursamu-audit --json                 Machine-readable output for CI
+  ursamu-audit --explain check-02     Full explanation for check-02
+  ursamu-audit --explain all          One-line summary of all checks
 `;
 
 // ── Fix mode ──────────────────────────────────────────────────────────────────
@@ -199,6 +218,25 @@ if (isMain) {
 
   if (opts.help) {
     process.stdout.write(HELP + "\n", () => process.exit(0));
+  }
+
+  // --explain
+  if (opts.explain !== null) {
+    if (opts.explain === "all") {
+      const ids = Object.keys(EXPLANATIONS).sort();
+      let out = "\nAll audit checks:\n\n";
+      for (const id of ids) {
+        const e = EXPLANATIONS[id];
+        out += `  ${id}  [${e.level.padEnd(10)}]  ${e.title}\n`;
+      }
+      process.stdout.write(out + "\n", () => process.exit(0));
+    }
+    const text = explain(opts.explain);
+    if (!text) {
+      process.stderr.write(`Unknown check ID: "${opts.explain}". Use --explain all to list checks.\n`);
+      process.exit(2);
+    }
+    process.stdout.write("\n" + text + "\n", () => process.exit(0));
   }
 
   // --fix and --watch are incompatible with --json

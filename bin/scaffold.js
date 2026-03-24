@@ -31,7 +31,7 @@ const isMain = (() => {
   catch { return false; }
 })();
 
-import { validateName, describeFiles, writeScaffold } from "../lib/scaffold/writer.js";
+import { validateName, describeFiles, writeScaffold, addCommandToPlugin } from "../lib/scaffold/writer.js";
 
 // ── Arg parsing ──────────────────────────────────────────────────────────────
 
@@ -47,6 +47,7 @@ export function parseArgs(argv) {
     withTests:  false,
     out:        null,
     dryRun:     false,
+    addCommand: null,
     help:       false,
   };
 
@@ -61,12 +62,13 @@ export function parseArgs(argv) {
     };
 
     switch (a) {
-      case "--with-routes": opts.withRoutes = true;        break;
-      case "--with-tests":  opts.withTests  = true;        break;
-      case "--out":         opts.out        = next();      break;
-      case "--dry-run":     opts.dryRun     = true;        break;
+      case "--with-routes":  opts.withRoutes  = true;        break;
+      case "--with-tests":   opts.withTests   = true;        break;
+      case "--out":          opts.out         = next();      break;
+      case "--dry-run":      opts.dryRun      = true;        break;
+      case "--add-command":  opts.addCommand  = next();      break;
       case "--help":
-      case "-h":            opts.help       = true;        break;
+      case "-h":             opts.help        = true;        break;
       default:
         if (a.startsWith("--")) {
           process.stderr.write(`Unknown option: ${a}\n`);
@@ -95,11 +97,13 @@ Arguments:
                     Must start with a letter. (e.g. "bbs", "mail", "my-plugin")
 
 Options:
-  --with-routes     Include routes.ts REST handler template
-  --with-tests      Include tests/<name>.test.ts + tests/helpers/mockU.ts
-  --out <dir>       Override output root (default: ./src/plugins/<name>)
-  --dry-run         Show files that would be created without writing
-  --help            Show this help
+  --with-routes          Include routes.ts REST handler template
+  --with-tests           Include tests/<name>.test.ts + tests/helpers/mockU.ts
+  --out <dir>            Override output root (default: ./src/plugins/<name>)
+  --add-command <name>   Append a new addCmd() skeleton to an existing plugin's
+                         commands.ts. Requires the plugin <name> positional arg.
+  --dry-run              Show files that would be created/modified without writing
+  --help                 Show this help
 
 Files created (always):
   index.ts          IPlugin export with init/remove lifecycle hooks
@@ -116,6 +120,7 @@ Files created with --with-tests:
 Examples:
   ursamu-scaffold bbs
   ursamu-scaffold mail --with-routes --with-tests
+  ursamu-scaffold bbs --add-command "+bbs-post"
   ursamu-scaffold my-plugin --out ./plugins/my-plugin --dry-run
 `;
 
@@ -144,6 +149,29 @@ if (isMain) {
   } catch (e) {
     process.stderr.write(`Error: ${e.message}\n`);
     process.exit(1);
+  }
+
+  // --add-command mode: append a new command skeleton to an existing commands.ts
+  if (opts.addCommand !== null) {
+    const cmdName = opts.addCommand;
+    const pluginOut = opts.out ?? `./src/plugins/${opts.name}`;
+    console.log(`\n@lhi/ursamu-dev scaffold — adding command "${cmdName}" to plugin "${opts.name}"\n`);
+    if (opts.dryRun) {
+      console.log(`Would append addCmd("${cmdName}") skeleton to ${pluginOut}/commands.ts`);
+      console.log("\nDry run — no files written.\n");
+      process.exit(0);
+    }
+    try {
+      const written = addCommandToPlugin(opts.name, cmdName, pluginOut);
+      let display;
+      try { display = relative(process.cwd(), written); } catch { display = written; }
+      console.log(`  updated  ${display}`);
+      console.log(`\nDone. Command "${cmdName}" skeleton appended.\n`);
+    } catch (e) {
+      process.stderr.write(`Error: ${e.message}\n`);
+      process.exit(1);
+    }
+    process.exit(0);
   }
 
   console.log(`\n@lhi/ursamu-dev scaffold — creating plugin "${opts.name}"\n`);

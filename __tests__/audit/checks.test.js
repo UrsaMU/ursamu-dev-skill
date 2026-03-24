@@ -18,6 +18,10 @@ import {
   checkInitReturnsTrue,
   checkInputSanitization,
   checkTargetNullGuard,
+  checkCanEditGuard,
+  checkAdminFlagsGuard,
+  checkColorReset,
+  checkDbModifyOp,
 } from "../../lib/audit/checks.js";
 
 const FILE = "/fake/project/src/plugins/test/index.ts";
@@ -356,6 +360,166 @@ describe("check-04 checkTargetNullGuard", () => {
 
   it("returns empty when no exec block", () => {
     const v = checkTargetNullGuard(lines(`const x = 1;`), FILE);
+    assert.equal(v.length, 0);
+  });
+});
+
+// ── check-02 — canEdit permission guard ──────────────────────────────────────
+
+describe("check-02 checkCanEditGuard", () => {
+  it("passes when canEdit is called before db.modify", () => {
+    const src = `addCmd({ exec: async (u) => {
+  const target = await u.util.target(u.me, name, true);
+  if (!target) { u.send("Not found."); return; }
+  if (!(await u.canEdit(u.me, target))) { u.send("Denied."); return; }
+  await u.db.modify(target.id, "$set", { x: 1 });
+} });`;
+    const v = checkCanEditGuard(lines(src), FILE);
+    assert.equal(v.length, 0);
+  });
+
+  it("warns when target+db.modify present but no canEdit", () => {
+    const src = `addCmd({ exec: async (u) => {
+  const target = await u.util.target(u.me, name, true);
+  await u.db.modify(target.id, "$set", { x: 1 });
+} });`;
+    const v = checkCanEditGuard(lines(src), FILE);
+    assert.ok(v.some(x => x.check === "check-02" && x.level === "warn"));
+  });
+
+  it("returns empty when no exec block", () => {
+    const v = checkCanEditGuard(lines(`const x = 1;`), FILE);
+    assert.equal(v.length, 0);
+  });
+
+  it("returns empty when only target (no db write)", () => {
+    const src = `addCmd({ exec: async (u) => {
+  const target = await u.util.target(u.me, name, true);
+  u.send(target.name);
+} });`;
+    const v = checkCanEditGuard(lines(src), FILE);
+    assert.equal(v.length, 0);
+  });
+});
+
+// ── check-05 — Admin-only flags guard ────────────────────────────────────────
+
+describe("check-05 checkAdminFlagsGuard", () => {
+  it("passes when admin lock and flags.has() both present", () => {
+    const src = `addCmd({
+  lock: "connected admin+",
+  exec: async (u) => {
+    if (!u.me.flags.has("admin")) { u.send("Denied."); return; }
+    u.send("ok");
+  },
+});`;
+    const v = checkAdminFlagsGuard(lines(src), FILE);
+    assert.equal(v.length, 0);
+  });
+
+  it("hints when admin lock present but no flags.has() in exec", () => {
+    const src = `addCmd({
+  lock: "connected admin+",
+  exec: async (u) => {
+    u.send("ok");
+  },
+});`;
+    const v = checkAdminFlagsGuard(lines(src), FILE);
+    assert.ok(v.some(x => x.check === "check-05" && x.level === "hint"));
+  });
+
+  it("returns empty for non-admin lock command", () => {
+    const src = `addCmd({
+  lock: "connected",
+  exec: async (u) => { u.send("ok"); },
+});`;
+    const v = checkAdminFlagsGuard(lines(src), FILE);
+    assert.equal(v.length, 0);
+  });
+
+  it("passes when wizard lock and flags.has() present", () => {
+    const src = `addCmd({
+  lock: "connected wizard",
+  exec: async (u) => {
+    if (!u.me.flags.has("wizard")) { return; }
+    u.send("ok");
+  },
+});`;
+    const v = checkAdminFlagsGuard(lines(src), FILE);
+    assert.equal(v.length, 0);
+  });
+});
+
+// ── check-07 — Color reset ────────────────────────────────────────────────────
+
+describe("check-07 checkColorReset", () => {
+  it("passes when color code is followed by %cn on same line", () => {
+    const v = checkColorReset(lines(`u.send("%chHello%cn");`), FILE);
+    assert.equal(v.length, 0);
+  });
+
+  it("warns when color code has no %cn reset", () => {
+    const v = checkColorReset(lines(`u.send("%chHello");`), FILE);
+    assert.ok(v.some(x => x.check === "check-07" && x.level === "warn"));
+  });
+
+  it("warns for red color code without reset", () => {
+    const v = checkColorReset(lines(`u.send("%crError occurred");`), FILE);
+    assert.ok(v.some(x => x.check === "check-07"));
+  });
+
+  it("returns empty for lines without any color codes", () => {
+    const v = checkColorReset(lines(`u.send("Hello world");`), FILE);
+    assert.equal(v.length, 0);
+  });
+
+  it("skips comment lines", () => {
+    const v = checkColorReset(lines(`// Use %ch for bold, %cn to reset`), FILE);
+    assert.equal(v.length, 0);
+  });
+
+  it("returns empty for lines with only %cn (reset only)", () => {
+    const v = checkColorReset(lines(`u.send("Normal %cn text");`), FILE);
+    assert.equal(v.length, 0);
+  });
+});
+
+// ── check-08 — Correct op string (whitelist) ──────────────────────────────────
+
+describe("check-08 checkDbModifyOp", () => {
+  it("passes for $set op", () => {
+    const v = checkDbModifyOp(lines(`await u.db.modify(id, "$set", { x: 1 });`), FILE);
+    assert.equal(v.length, 0);
+  });
+
+  it("passes for $inc op", () => {
+    const v = checkDbModifyOp(lines(`await u.db.modify(id, "$inc", { score: 1 });`), FILE);
+    assert.equal(v.length, 0);
+  });
+
+  it("passes for $unset op", () => {
+    const v = checkDbModifyOp(lines(`await u.db.modify(id, "$unset", { field: 1 });`), FILE);
+    assert.equal(v.length, 0);
+  });
+
+  it("errors for $push op", () => {
+    const v = checkDbModifyOp(lines(`await u.db.modify(id, "$push", { items: x });`), FILE);
+    assert.ok(v.some(x => x.check === "check-08" && x.level === "error"));
+  });
+
+  it("errors for $rename op", () => {
+    const v = checkDbModifyOp(lines(`await u.db.modify(id, "$rename", { old: "new" });`), FILE);
+    assert.ok(v.some(x => x.check === "check-08" && x.level === "error"));
+  });
+
+  it("returns empty when no db.modify call", () => {
+    const v = checkDbModifyOp(lines(`const x = 1;`), FILE);
+    assert.equal(v.length, 0);
+  });
+
+  it("returns empty for db.modify without an op string match", () => {
+    // modify call with a variable op — can't whitelist-check it
+    const v = checkDbModifyOp(lines(`await u.db.modify(id, op, { x: 1 });`), FILE);
     assert.equal(v.length, 0);
   });
 });
