@@ -1,6 +1,6 @@
 {
   "name": "@lhi/ursamu-dev",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "UrsaMU development skill installer for Claude Code, Gemini CLI, Cursor, Codex, Antigravity, and OpenCode.",
   "type": "module",
   "main": "bin/cli.js",

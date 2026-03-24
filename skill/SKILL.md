@@ -62,6 +62,20 @@ Stage 5 — Docs      → REQUIRED output: help text + JSDoc + README (if plugin
 
 ---
 
+## Scaffold before you design (new plugins)
+
+If the task is creating a **new plugin** and the plugin directory does not yet exist, tell the user to run this in their terminal before Stage 0:
+
+```bash
+npx @lhi/ursamu-dev scaffold <name> [--with-routes] [--with-tests]
+```
+
+This generates the correct `index.ts`, `commands.ts`, and `README.md` boilerplate. It is a **terminal command** — not a Claude slash command. The user runs it in their shell, then resumes the Stage 0 design conversation here.
+
+If the plugin already exists, skip this step and proceed directly to Stage 0.
+
+---
+
 ## Stage 0 — Design
 
 **Do not write any code during this stage.**

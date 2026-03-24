@@ -331,14 +331,20 @@ Generates a fully-wired, correctly-structured UrsaMU plugin from one command. Ev
 
 ### Usage (scaffold) {#usage-scaffold}
 
+`ursamu-scaffold` is a **terminal command** — run it in your shell, not inside Claude.
+
 ```bash
+# With npx (no install required)
+npx @lhi/ursamu-dev scaffold <name> [options]
+
+# Or if installed globally
 ursamu-scaffold <name> [options]
 ```
 
 ```bash
-ursamu-scaffold bbs
-ursamu-scaffold mail --with-routes --with-tests
-ursamu-scaffold my-plugin --out ./plugins/my-plugin --dry-run
+npx @lhi/ursamu-dev scaffold bbs
+npx @lhi/ursamu-dev scaffold mail --with-routes --with-tests
+npx @lhi/ursamu-dev scaffold my-plugin --out ./plugins/my-plugin --dry-run
 ```
 
 ### Options (scaffold) {#options-scaffold}
@@ -387,7 +393,7 @@ Plugin names must:
 ### Example (scaffold) {#example-scaffold}
 
 ```bash
-ursamu-scaffold greeter --with-routes --with-tests
+npx @lhi/ursamu-dev scaffold greeter --with-routes --with-tests
 ```
 
 ```

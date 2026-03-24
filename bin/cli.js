@@ -136,13 +136,28 @@ const isMain = (() => {
 if (isMain) {
   const args = process.argv.slice(2);
 
+  // Scaffold subcommand: npx @lhi/ursamu-dev scaffold <name> [options]
+  if (args[0] === "scaffold") {
+    const scaffoldBin = join(__dirname, "scaffold.js");
+    const result = spawnSync(process.execPath, [scaffoldBin, ...args.slice(1)], { stdio: "inherit" });
+    process.exit(result.status ?? 0);
+  }
+
   if (args.includes("--help") || args.includes("-h")) {
     console.log(`
-@lhi/ursamu-dev — UrsaMU dev skill installer
+@lhi/ursamu-dev — UrsaMU dev skill installer + toolkit
 
-  npx @lhi/ursamu-dev [options]
+Usage:
+  npx @lhi/ursamu-dev [options]              Install the skill into your AI agent
+  npx @lhi/ursamu-dev scaffold <name> [...]  Generate a new plugin scaffold
 
-Options:
+Scaffold subcommand (runs in your terminal — not inside Claude):
+  npx @lhi/ursamu-dev scaffold <name>
+  npx @lhi/ursamu-dev scaffold <name> --with-routes --with-tests
+  npx @lhi/ursamu-dev scaffold <name> --add-command "+cmd-name"
+  npx @lhi/ursamu-dev scaffold --help        Show scaffold-specific help
+
+Skill installer options:
   --claude        Install to ~/.claude/skills        (Claude Code)
   --gemini        Install to ~/.gemini/skills        (Gemini CLI)
   --cursor        Install to ~/.cursor/skills        (Cursor)
@@ -163,12 +178,12 @@ Companion skills installed alongside ursamu-dev:
   docs-architect, readme, api-documentation
 
 Examples:
-  npx @lhi/ursamu-dev
-  npx @lhi/ursamu-dev --opencode
-  npx @lhi/ursamu-dev --all
-  npx @lhi/ursamu-dev --claude --opencode
-  npx @lhi/ursamu-dev --claude --no-companions
-  npx @lhi/ursamu-dev --install-hooks
+  npx @lhi/ursamu-dev                                 Install skill for Claude Code
+  npx @lhi/ursamu-dev scaffold bbs                    Generate a new bbs plugin
+  npx @lhi/ursamu-dev scaffold mail --with-tests      Generate plugin + test files
+  npx @lhi/ursamu-dev --opencode                      Install for OpenCode
+  npx @lhi/ursamu-dev --all                           Install for every platform
+  npx @lhi/ursamu-dev --install-hooks                 Add pre-commit audit hook
 `);
     process.stdout.write("", () => process.exit(0));
   }
