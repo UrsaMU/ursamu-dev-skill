@@ -1,12 +1,14 @@
 {
   "name": "@lhi/ursamu-dev",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "description": "UrsaMU development skill installer for Claude Code, Gemini CLI, Cursor, Codex, Antigravity, and OpenCode.",
   "type": "module",
   "main": "bin/cli.js",
   "bin": {
     "ursamu-dev": "bin/cli.js",
-    "ursamu-docs": "bin/docs.js"
+    "ursamu-docs": "bin/docs.js",
+    "ursamu-audit": "bin/audit.js",
+    "ursamu-scaffold": "bin/scaffold.js"
   },
   "files": [
     "bin/",
@@ -18,6 +20,9 @@
     "test": "node bin/cli.js --dry-run --all",
     "test:security": "node --test __tests__/security/codex-home-traversal.test.js",
     "test:docs": "node --test __tests__/docs/llm.test.js __tests__/docs/scanner.test.js __tests__/docs/writer.test.js __tests__/security/ssrf-base-url.test.js __tests__/security/path-traversal-src.test.js __tests__/security/arbitrary-write-out.test.js __tests__/security/nan-numeric-args.test.js __tests__/security/unbounded-scan.test.js __tests__/security/patch-mode-write.test.js __tests__/security/missing-arg.test.js __tests__/security/codex-home-traversal.test.js",
+    "test:audit": "node --test __tests__/audit/checks.test.js __tests__/audit/runner.test.js __tests__/audit/fixer.test.js",
+    "test:scaffold": "node --test __tests__/scaffold/templates.test.js __tests__/scaffold/writer.test.js",
+    "test:hooks": "node --test __tests__/hooks/hooks.test.js",
     "docs": "node bin/docs.js"
   },
   "keywords": [

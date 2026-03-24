@@ -6,6 +6,7 @@ import { homedir } from "os";
 import { fileURLToPath } from "url";
 import { spawnSync } from "child_process";
 import { createRequire } from "module";
+import { installHook } from "../lib/hooks.js";
 
 const require = createRequire(import.meta.url);
 
@@ -150,6 +151,7 @@ Options:
   --opencode      Install to ~/.config/opencode/agents (OpenCode)
   --all           Install to all platforms above
   --no-companions Skip companion skills installation
+  --install-hooks Add ursamu-audit to your git pre-commit hook
   --dry-run       Show what would be installed without writing files
   --help          Show this help
 
@@ -166,7 +168,34 @@ Examples:
   npx @lhi/ursamu-dev --all
   npx @lhi/ursamu-dev --claude --opencode
   npx @lhi/ursamu-dev --claude --no-companions
+  npx @lhi/ursamu-dev --install-hooks
 `);
+    process.stdout.write("", () => process.exit(0));
+  }
+
+  // ── --install-hooks (standalone — does not require platform flags) ────────
+  if (args.includes("--install-hooks")) {
+    console.log("\n@lhi/ursamu-dev — installing pre-commit hook\n");
+    const dryRun = args.includes("--dry-run");
+    const { action, hookPath } = installHook({ dryRun });
+    switch (action) {
+      case "created":
+        console.log(`  ✓ Hook created: ${hookPath}`);
+        console.log("    ursamu-audit --no-hints will run before every commit.");
+        break;
+      case "patched":
+        console.log(`  ✓ Hook patched: ${hookPath}`);
+        console.log("    ursamu-audit --no-hints appended to existing pre-commit hook.");
+        break;
+      case "already-installed":
+        console.log(`  ✓ Already installed: ${hookPath}`);
+        break;
+      case "no-git":
+        console.error("  ✗ No git repository found. Run from inside a git project.");
+        process.exit(1);
+        break;
+    }
+    if (dryRun) console.log("  (dry-run — nothing written)");
     process.stdout.write("", () => process.exit(0));
   }
 

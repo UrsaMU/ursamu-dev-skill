@@ -109,6 +109,57 @@ describe("H1 — SSRF: --base-url validation", () => {
     );
   });
 
+  // ── IPv6 private / link-local ranges (LOW-01) ────────────────────────────
+
+  it("rejects ::1 (IPv6 loopback literal)", () => {
+    assert.throws(
+      () => resolve(CUSTOM("https://[::1]/v1")),
+      /private|loopback|reserved/i
+    );
+  });
+
+  it("rejects fc00::1 (IPv6 Unique Local fc00::/7 lower)", () => {
+    assert.throws(
+      () => resolve(CUSTOM("https://[fc00::1]/v1")),
+      /private|loopback|reserved/i
+    );
+  });
+
+  it("rejects fdff:ffff::1 (IPv6 Unique Local fc00::/7 upper boundary)", () => {
+    assert.throws(
+      () => resolve(CUSTOM("https://[fdff:ffff::1]/v1")),
+      /private|loopback|reserved/i
+    );
+  });
+
+  it("rejects fd00::1 (IPv6 Unique Local fd00::/8)", () => {
+    assert.throws(
+      () => resolve(CUSTOM("https://[fd00::1]/v1")),
+      /private|loopback|reserved/i
+    );
+  });
+
+  it("rejects fe80::1 (IPv6 Link-Local fe80::/10)", () => {
+    assert.throws(
+      () => resolve(CUSTOM("https://[fe80::1]/v1")),
+      /private|loopback|reserved/i
+    );
+  });
+
+  it("rejects febf::1 (IPv6 Link-Local fe80::/10 upper boundary)", () => {
+    assert.throws(
+      () => resolve(CUSTOM("https://[febf::1]/v1")),
+      /private|loopback|reserved/i
+    );
+  });
+
+  it("accepts a public IPv6 address (2001:db8::1)", () => {
+    // RFC 3849 documentation range — treated as public for test purposes
+    assert.doesNotThrow(() =>
+      resolve(CUSTOM("https://[2001:db8::1]/v1"))
+    );
+  });
+
   // ── Valid HTTPS should still work ──────────────────────────────────────────
 
   it("accepts a legitimate https:// base URL", () => {

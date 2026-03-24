@@ -137,7 +137,7 @@ export function parseArgs(argv) {
 
 // ── Help text ────────────────────────────────────────────────────────────────
 
-const HELP = `
+export const HELP = `
 @lhi/ursamu-dev docs — UrsaMU standalone docs generator
 
   node bin/docs.js [options]
@@ -152,6 +152,8 @@ Options:
   --model <id>        Override default model for the selected provider
   --base-url <url>    OpenAI-compatible base URL  (--provider custom only)
   --api-key <key>     API key override (falls back to env vars)
+                      WARNING: visible in shell history and process listings.
+                      Prefer setting the provider env var instead.
   --max-tokens <n>    Max tokens per LLM call (default: 4096)
   --dry-run           Show resolved config + discovered files; skip LLM calls
   --help              Show this help
