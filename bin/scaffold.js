@@ -31,7 +31,7 @@ const isMain = (() => {
   catch { return false; }
 })();
 
-import { validateName, describeFiles, writeScaffold, addCommandToPlugin } from "../lib/scaffold/writer.js";
+import { validateName, describeFiles, writeScaffold, addCommandToPlugin, isUrsamuProject } from "../lib/scaffold/writer.js";
 
 // ── Arg parsing ──────────────────────────────────────────────────────────────
 
@@ -154,7 +154,7 @@ if (isMain) {
   // --add-command mode: append a new command skeleton to an existing commands.ts
   if (opts.addCommand !== null) {
     const cmdName = opts.addCommand;
-    const pluginOut = opts.out ?? `./src/plugins/${opts.name}`;
+    const pluginOut = opts.out ?? (isUrsamuProject() ? `./src/plugins/${opts.name}` : `./${opts.name}`);
     console.log(`\n@lhi/ursamu-dev scaffold — adding command "${cmdName}" to plugin "${opts.name}"\n`);
     if (opts.dryRun) {
       console.log(`Would append addCmd("${cmdName}") skeleton to ${pluginOut}/commands.ts`);
