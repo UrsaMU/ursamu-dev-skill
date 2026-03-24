@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    name: Test & Lint
+    name: Test (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
 
     strategy:
@@ -27,19 +27,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint
-        run: npm run lint --if-present
+      - name: Audit tests
+        run: npm run test:audit
 
-      - name: Unit tests
+      - name: Scaffold tests
+        run: npm run test:scaffold
+
+      - name: Hook tests
+        run: npm run test:hooks
+
+      - name: Docs & security tests
+        run: npm run test:docs
+
+      - name: Smoke test (dry-run install)
         run: npm test
-
-      - name: Security tests
-        run: npm run test:security --if-present
-
-      - name: Upload coverage
-        if: matrix.node-version == '20.x'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: coverage
-          path: coverage/
-          retention-days: 7

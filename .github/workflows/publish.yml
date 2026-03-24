@@ -7,8 +7,10 @@ on:
 
 jobs:
   publish:
-    name: Publish
+    name: Test & Publish
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # needed to create GitHub Releases
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -23,13 +25,27 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests
-        run: npm test
+      - name: Audit tests
+        run: npm run test:audit
 
-      - name: Run security tests
-        run: npm run test:security
+      - name: Scaffold tests
+        run: npm run test:scaffold
+
+      - name: Hook tests
+        run: npm run test:hooks
+
+      - name: Docs & security tests
+        run: npm run test:docs
+
+      - name: Smoke test (dry-run install)
+        run: npm test
 
       - name: Publish
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf632 # v2
+        with:
+          generate_release_notes: true
