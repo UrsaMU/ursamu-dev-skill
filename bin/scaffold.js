@@ -106,9 +106,10 @@ Options:
   --help                 Show this help
 
 Files created (always):
-  index.ts          IPlugin export with init/remove lifecycle hooks
+  index.ts          IPlugin export with init/remove lifecycle hooks + registerHelpDir
   commands.ts       addCmd() skeleton with correct imports and help text
   README.md         Plugin documentation template
+  help/<name>.md    In-game help file registered via registerHelpDir()
 
 Files created with --with-routes:
   routes.ts         REST handler with userId auth guard

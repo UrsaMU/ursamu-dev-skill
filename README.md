@@ -8,7 +8,7 @@ A complete development toolkit for writing UrsaMU plugins and commands with an A
 |------|-------------|-----------|
 | `ursamu-dev` | Install the skill into your AI agent | No |
 | `ursamu-audit` | Static analysis — catch violations before CI does | No |
-| `ursamu-scaffold` | Generate correct plugin boilerplate in one command | No |
+| `ursamu-scaffold` | Generate correct plugin boilerplate — including help files and version wiring | No |
 | `ursamu-docs` | Run any skill stage against your source to produce docs | Yes |
 
 ## Quick Start

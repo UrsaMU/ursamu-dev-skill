@@ -1,6 +1,6 @@
 {
   "name": "@lhi/ursamu-dev",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "UrsaMU development skill installer for Claude Code, Gemini CLI, Cursor, Codex, Antigravity, and OpenCode.",
   "type": "module",
   "main": "bin/cli.js",
@@ -44,7 +44,7 @@
   "author": "Lemuel Lee Canady, Jr.",
   "license": "MIT",
   "dependencies": {
-    "@lhi/tdd-audit": "^1.4.1",
+    "@lhi/tdd-audit": "^1.5.0",
     "openai": "^6.32.0"
   },
   "engines": {

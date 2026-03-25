@@ -8,7 +8,7 @@ Stage 1 — Generate  → Working code
 Stage 2 — Audit     → Audit Report (11 checklist items)
 Stage 3 — Refine    → Fixed code (or "No issues found")
 Stage 4 — Test      → Passing Deno test file + TDD remediation
-Stage 5 — Docs      → Help text + JSDoc + README (if plugin)
+Stage 5 — Docs      → Help file + Help text + JSDoc + README (if plugin)
 ```
 
 ## Stage 0 — Design
@@ -53,4 +53,4 @@ Deno tests using the `mockU()` / `mockPlayer()` helpers. Required test cases: ha
 
 ## Stage 5 — Docs
 
-In-game help text, JSDoc blocks, plugin README, and REST route contracts. The same output format used by `ursamu-docs`. See [docs-generator.md](./docs-generator.md) for the output layout.
+In-game help text, JSDoc blocks, plugin README, REST route contracts, and `help/<name>.md` help files registered via `registerHelpDir()`. A filled-in `help/<name>.md` is required for every plugin command — the scaffold generates the stub, but it must be completed before Stage 5 passes. The same output format is used by `ursamu-docs`. See [docs-generator.md](./docs-generator.md) for the output layout.

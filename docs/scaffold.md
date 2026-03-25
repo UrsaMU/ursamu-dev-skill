@@ -58,9 +58,10 @@ Plugin names must:
 
 | File | Contents |
 |------|----------|
-| `index.ts` | `IPlugin` export with three-phase lifecycle: module-load imports `addCmd`, `init()` returns `true`, `remove()` tears down hooks |
+| `index.ts` | `IPlugin` export with three-phase lifecycle: module-load imports `addCmd`, `init()` returns `true`, calls `registerHelpDir()`, `remove()` tears down hooks. If a `deno.json` exists at the project root, `version` is read from it automatically — single source of truth. |
 | `commands.ts` | `addCmd()` skeleton with correct `jsr:` imports, pattern, lock, `help:` with Examples, `stripSubs` in exec |
 | `README.md` | Plugin documentation template with Commands, Events, Storage, REST Routes, and Notes sections |
+| `help/<name>.md` | Markdown help file registered via `registerHelpDir()`. Served by the [help-plugin](https://github.com/UrsaMU/help-plugin) `FileProvider` at priority 50, overriding the inline `help:` field. Fill in the Syntax, Switches, and Examples sections. |
 
 **With `--with-routes`:**
 
@@ -95,14 +96,16 @@ npx @lhi/ursamu-dev scaffold greeter --with-routes --with-tests
   created  src/plugins/greeter/index.ts
   created  src/plugins/greeter/commands.ts
   created  src/plugins/greeter/README.md
+  created  src/plugins/greeter/help/greeter.md
   created  src/plugins/greeter/routes.ts
   created  src/plugins/greeter/tests/greeter.test.ts
   created  src/plugins/greeter/tests/helpers/mockU.ts
 
-Done. 6 file(s) created.
+Done. 7 file(s) created.
 
 Next steps:
   1. Fill in your plugin description in index.ts and README.md
   2. Implement the exec() body in commands.ts
-  3. Run Stage 0 design with the ursamu-dev skill
+  3. Fill in help/greeter.md (Syntax, Switches, Examples)
+  4. Run Stage 0 design with the ursamu-dev skill
 ```

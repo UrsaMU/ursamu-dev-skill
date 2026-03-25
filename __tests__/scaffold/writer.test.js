@@ -51,20 +51,21 @@ describe("validateName", () => {
 // ── describeFiles ─────────────────────────────────────────────────────────────
 
 describe("describeFiles", () => {
-  it("returns 3 files by default", () => {
+  it("returns 4 files by default (including help/<name>.md)", () => {
     const files = describeFiles("foo");
-    assert.equal(files.length, 3);
+    assert.equal(files.length, 4);
+    assert.ok(files.some(f => f.endsWith("foo.md")), "must include help/foo.md");
   });
 
-  it("returns 4 files with --with-routes", () => {
+  it("returns 5 files with --with-routes", () => {
     const files = describeFiles("foo", { withRoutes: true });
-    assert.equal(files.length, 4);
+    assert.equal(files.length, 5);
     assert.ok(files.some(f => f.endsWith("routes.ts")));
   });
 
-  it("returns 5 files with --with-tests", () => {
+  it("returns 6 files with --with-tests", () => {
     const files = describeFiles("foo", { withTests: true });
-    assert.equal(files.length, 5);
+    assert.equal(files.length, 6);
     assert.ok(files.some(f => f.endsWith("foo.test.ts")));
     assert.ok(files.some(f => f.endsWith("mockU.ts")));
   });
@@ -79,12 +80,13 @@ describe("describeFiles", () => {
 // ── writeScaffold — default (3 files) ────────────────────────────────────────
 
 describe("writeScaffold default", () => {
-  it("creates index.ts, commands.ts, README.md", () => {
+  it("creates index.ts, commands.ts, README.md, help/greeter.md", () => {
     const out = tmpOut("default");
     writeScaffold("greeter", { out });
     assert.ok(existsSync(join(out, "index.ts")));
     assert.ok(existsSync(join(out, "commands.ts")));
     assert.ok(existsSync(join(out, "README.md")));
+    assert.ok(existsSync(join(out, "help", "greeter.md")));
   });
 
   it("does not create routes.ts without --with-routes", () => {
@@ -95,6 +97,13 @@ describe("writeScaffold default", () => {
   it("does not create tests/ without --with-tests", () => {
     const out = tmpOut("default");
     assert.ok(!existsSync(join(out, "tests")));
+  });
+
+  it("help/greeter.md contains the command name and Syntax section", () => {
+    const out = tmpOut("default");
+    const content = readFileSync(join(out, "help", "greeter.md"), "utf8");
+    assert.ok(content.includes("+greeter"), "help file must reference +greeter");
+    assert.ok(content.includes("## Syntax"), "help file must have Syntax section");
   });
 });
 
@@ -153,6 +162,7 @@ describe("writeScaffold content", () => {
     const content = readFileSync(join(out, "index.ts"), "utf8");
     assert.ok(content.includes("export const plugin"), "must export plugin");
     assert.ok(content.includes("return true"), "init must return true");
+    assert.ok(content.includes("registerHelpDir"), "init must call registerHelpDir");
   });
 
   it("commands.ts contains addCmd with help: and Examples", () => {

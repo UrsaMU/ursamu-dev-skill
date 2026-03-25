@@ -12,6 +12,7 @@ import {
   testTemplate,
   mockUTemplate,
   readmeTemplate,
+  helpFileTemplate,
 } from "../../lib/scaffold/templates.js";
 
 // ── indexTemplate ─────────────────────────────────────────────────────────────
@@ -50,6 +51,28 @@ describe("indexTemplate", () => {
   it("includes registerPluginRoute with --with-routes", () => {
     const out = indexTemplate("greeter", { withRoutes: true });
     assert.ok(out.includes("registerPluginRoute"), "must include route registration");
+  });
+
+  it("imports registerHelpDir from help-plugin", () => {
+    const out = indexTemplate("greeter");
+    assert.ok(out.includes("registerHelpDir"), "must import registerHelpDir");
+    assert.ok(out.includes("jsr:@ursamu/help-plugin"), "must use jsr:@ursamu/help-plugin");
+  });
+
+  it("calls registerHelpDir in init()", () => {
+    const out = indexTemplate("greeter");
+    assert.ok(out.includes(`registerHelpDir(new URL("./help"`), "init must call registerHelpDir");
+  });
+
+  it("uses string version fallback when no denoJsonRelPath", () => {
+    const out = indexTemplate("greeter");
+    assert.ok(out.includes('"1.0.0"'), "must fall back to string version");
+  });
+
+  it("uses denoConfig.version when denoJsonRelPath provided", () => {
+    const out = indexTemplate("greeter", { denoJsonRelPath: "../../../deno.json" });
+    assert.ok(out.includes("denoConfig.version"), "must use denoConfig.version");
+    assert.ok(out.includes('"../../../deno.json"'), "must import deno.json at given path");
   });
 });
 
@@ -180,6 +203,30 @@ describe("mockUTemplate", () => {
   it("includes canEdit mock", () => {
     const out = mockUTemplate();
     assert.ok(out.includes("canEdit"), "must include canEdit mock");
+  });
+});
+
+// ── helpFileTemplate ──────────────────────────────────────────────────────────
+
+describe("helpFileTemplate", () => {
+  it("includes the command name", () => {
+    const out = helpFileTemplate("bbs");
+    assert.ok(out.includes("+bbs"), "must reference the command");
+  });
+
+  it("has a Syntax section", () => {
+    const out = helpFileTemplate("bbs");
+    assert.ok(out.includes("## Syntax"), "must have Syntax section");
+  });
+
+  it("has an Examples section", () => {
+    const out = helpFileTemplate("bbs");
+    assert.ok(out.includes("## Examples"), "must have Examples section");
+  });
+
+  it("has a Switches section", () => {
+    const out = helpFileTemplate("bbs");
+    assert.ok(out.includes("## Switches"), "must have Switches section");
   });
 });
 

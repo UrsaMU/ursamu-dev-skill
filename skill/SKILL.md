@@ -70,7 +70,7 @@ If the task is creating a **new plugin** and the plugin directory does not yet e
 npx @lhi/ursamu-dev scaffold <name> [--with-routes] [--with-tests]
 ```
 
-This generates the correct `index.ts`, `commands.ts`, and `README.md` boilerplate. It is a **terminal command** — not a Claude slash command. The user runs it in their shell, then resumes the Stage 0 design conversation here.
+This generates `index.ts`, `commands.ts`, `README.md`, and `help/<name>.md` boilerplate, with `registerHelpDir()` wired into `init()`. If a `deno.json` exists at the project root, `version` is read from it automatically. It is a **terminal command** — not a Claude slash command. The user runs it in their shell, then resumes the Stage 0 design conversation here.
 
 If the plugin already exists, skip this step and proceed directly to Stage 0.
 
@@ -347,10 +347,12 @@ remove: () => {
 
 ```
 src/plugins/<name>/
-├── index.ts          REQUIRED — exports `plugin: IPlugin`, imports commands.ts
+├── index.ts          REQUIRED — exports `plugin: IPlugin`, imports commands.ts, calls registerHelpDir()
 ├── commands.ts       REQUIRED if any commands — all addCmd() calls live here
 ├── routes.ts         Optional — registerPluginRoute() calls, imported in init()
 ├── <feature>.ts      Optional — domain logic, imported by commands.ts or routes.ts
+├── help/             REQUIRED — help files served by help-plugin FileProvider
+│   └── <name>.md     One file per command (or sub-topic)
 ├── tests/            Optional — Deno tests for this plugin's units
 │   └── <name>.test.ts
 └── README.md         REQUIRED — see Stage 5c format
@@ -487,6 +489,7 @@ After writing code, internally verify every item. Output the full **Audit Report
 - [ ] **Correct op string** — `u.db.modify` third arg is `"$set"` | `"$unset"` | `"$inc"` only
 - [ ] **Import path** — internal plugins use relative imports; external use `jsr:@ursamu/ursamu`
 - [ ] **Help text** — `help:` field on every `addCmd` with: (1) syntax line, (2) Switches section if any switches exist, (3) at least two Examples
+- [ ] **Help file** — `help/<name>.md` exists for every command and `init()` calls `registerHelpDir()` (plugins only)
 - [ ] **Plugin phase discipline** — `addCmd()` calls are in `commands.ts` (module-load), never inside `init()`
 - [ ] **gameHooks pairing** — every `gameHooks.on()` in `init()` has a matching `gameHooks.off()` in `remove()` using an identical named-function reference (not an inline arrow)
 - [ ] **DBO namespace** — all `new DBO<T>(...)` collection names are prefixed with `<pluginName>.`
@@ -750,6 +753,46 @@ await u.db.modify(target.id, "$inc", { "data.score": 1 });
 
 // u.mail only exists in sandbox scripts, not native addCmd
 ```
+
+### 5f. Help system file (`help/<name>.md`) — required for every plugin command
+
+Every command must have a corresponding Markdown help file registered via
+`registerHelpDir()`. The scaffold generates `help/<name>.md` automatically.
+Verify it is filled in — stubs are a Stage 2 FAIL.
+
+> **How it works:** `registerHelpDir()` is called in `init()` and scans the
+> `help/` directory. Files are served by the
+> [help-plugin](https://github.com/UrsaMU/help-plugin) `FileProvider` at
+> priority 50, overriding the inline `help:` field (priority 10).
+
+Required content per help file:
+
+```markdown
+# +<command>
+
+> One-sentence description.
+
+## Syntax
+
+    +<command>[/switch] <required> [<optional>]
+
+## Switches
+
+| Switch | Description |
+|--------|-------------|
+| `/switch` | What this switch does. |
+
+## Examples
+
+    +<command> Alice          Does the thing.
+    +<command>/switch Alice   Does the other thing.
+```
+
+Rules:
+- File lives at `src/plugins/<name>/help/<name>.md` (add more files for sub-topics)
+- `init()` must call `registerHelpDir(new URL("./help", import.meta.url).pathname, "<name>")`
+- The section name passed to `registerHelpDir` must match the plugin name
+- At least two Examples; use real arg names, not `<foo>`
 
 ---
 
