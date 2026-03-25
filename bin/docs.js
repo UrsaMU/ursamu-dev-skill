@@ -117,12 +117,15 @@ export function parseArgs(argv) {
       case "--model":     opts.model     = next();                   break;
       case "--base-url":  opts.baseURL   = next();                   break;
       case "--api-key":
-        opts.apiKey = next();
-        process.stderr.write(
-          "Warning: --api-key on the command line may appear in shell history " +
-          "and process listings. Prefer the environment variable instead.\n"
+        // Hard-reject: secrets on the command line are visible in shell history,
+        // `ps aux`, and CI logs.  The caller must use an environment variable.
+        throw new Error(
+          "--api-key is not accepted on the command line.\n" +
+          "Set the provider environment variable instead:\n" +
+          "  ANTHROPIC_API_KEY=sk-...  (for --provider anthropic)\n" +
+          "  OPENAI_API_KEY=sk-...     (for --provider openai / custom)\n" +
+          "  GOOGLE_API_KEY=...        (for --provider google)"
         );
-        break;
       case "--max-tokens":opts.maxTokens = validateMaxTokens(next()); break;
       case "--dry-run":   opts.dryRun    = true;                     break;
       case "--help": case "-h": opts.help = true;                    break;
@@ -151,9 +154,9 @@ Options:
                       (auto-detected from env vars if omitted)
   --model <id>        Override default model for the selected provider
   --base-url <url>    OpenAI-compatible base URL  (--provider custom only)
-  --api-key <key>     API key override (falls back to env vars)
-                      WARNING: visible in shell history and process listings.
-                      Prefer setting the provider env var instead.
+  --api-key           REMOVED — rejected to prevent shell history / process-list
+                      exposure.  Set ANTHROPIC_API_KEY / OPENAI_API_KEY /
+                      GOOGLE_API_KEY as an environment variable instead.
   --max-tokens <n>    Max tokens per LLM call (default: 4096)
   --dry-run           Show resolved config + discovered files; skip LLM calls
   --help              Show this help

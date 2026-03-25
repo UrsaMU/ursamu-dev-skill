@@ -39,7 +39,9 @@ describe("LOW-02 — --api-key warning visible in --help text", () => {
 // ── L2: Missing-arg off-by-one ────────────────────────────────────────────────
 
 describe("L2 — Missing argument after value-taking flag", () => {
-  const FLAGS = ["--stage", "--src", "--out", "--provider", "--model", "--base-url", "--api-key", "--max-tokens"];
+  // --api-key is excluded: it is now hard-rejected before consuming a value
+  // (see api-key-cli-rejection.test.js for that coverage).
+  const FLAGS = ["--stage", "--src", "--out", "--provider", "--model", "--base-url", "--max-tokens"];
 
   for (const flag of FLAGS) {
     it(`throws a clear error when ${flag} is the last argument`, () => {
