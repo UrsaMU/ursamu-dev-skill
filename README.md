@@ -1,3 +1,5 @@
+![Coverage](https://img.shields.io/badge/coverage-96%25-brightgreen) [![Ursamu AI Dev](https://img.shields.io/badge/Ursamu_AI_Dev-passing-brightgreen)](https://github.com/UrsaMU/ursamu-dev-skill) <!-- tdd-audit-badge -->
+
 # @lhi/ursamu-dev
 
 A complete development toolkit for writing UrsaMU plugins and commands with an AI coding agent. Install the skill once and your agent knows the full UrsaMU development pipeline — correct import paths, plugin architecture, security patterns, and the mandatory six-stage **Design → Generate → Audit → Refine → Test → Docs** workflow.
