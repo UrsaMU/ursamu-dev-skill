@@ -7,6 +7,7 @@ import { fileURLToPath } from "url";
 import { spawnSync } from "child_process";
 import { createRequire } from "module";
 import { installHook } from "../lib/hooks.js";
+import { installClaudeStageGate, uninstallClaudeStageGate } from "../lib/claude-hooks.js";
 
 const require = createRequire(import.meta.url);
 
@@ -49,7 +50,7 @@ const PLATFORMS = {
 
 // ── Installers ─────────────────────────────────────────────────────────────
 
-function installSkillsDir(name, destBase, dryRun) {
+export function installSkillsDir(name, destBase, dryRun) {
   const dest = join(destBase, "ursamu-dev");
   console.log(`  → ${dest}`);
   if (dryRun) { console.log("    dry-run — skipped"); return true; }
@@ -69,7 +70,7 @@ function installSkillsDir(name, destBase, dryRun) {
   }
 }
 
-function installCompanions(destBase, dryRun) {
+export function installCompanions(destBase, dryRun) {
   if (!existsSync(COMPANION_DIR)) return;
   const skills = readdirSync(COMPANION_DIR, { withFileTypes: true })
     .filter(d => d.isDirectory())
@@ -94,7 +95,7 @@ function installCompanions(destBase, dryRun) {
   }
 }
 
-function installOpenCode(destDir, dryRun) {
+export function installOpenCode(destDir, dryRun) {
   const dest = join(destDir, "ursamu-dev.md");
   console.log(`  → ${dest}`);
   if (dryRun) { console.log("    dry-run — skipped"); return true; }
@@ -133,6 +134,7 @@ const isMain = (() => {
   catch { return false; }
 })();
 
+/* node:coverage disable */
 if (isMain) {
   const args = process.argv.slice(2);
 
@@ -167,6 +169,9 @@ Skill installer options:
   --all           Install to all platforms above
   --no-companions Skip companion skills installation
   --install-hooks Add ursamu-audit to your git pre-commit hook
+  --install-claude-hooks   Install Claude Code PreToolUse stage-gate hook
+                           into ~/.claude/settings.json (opt-in; survives uninstall)
+  --uninstall-claude-hooks Remove the stage-gate entry from ~/.claude/settings.json
   --dry-run       Show what would be installed without writing files
   --help          Show this help
 
@@ -185,6 +190,54 @@ Examples:
   npx @lhi/ursamu-dev --all                           Install for every platform
   npx @lhi/ursamu-dev --install-hooks                 Add pre-commit audit hook
 `);
+    process.stdout.write("", () => process.exit(0));
+  }
+
+  // ── --install-claude-hooks / --uninstall-claude-hooks (standalone) ────────
+  if (args.includes("--install-claude-hooks")) {
+    console.log("\n@lhi/ursamu-dev — installing Claude Code stage-gate hook\n");
+    const dryRun = args.includes("--dry-run");
+    try {
+      const { status, path } = installClaudeStageGate({ dryRun });
+      switch (status) {
+        case "installed":
+          console.log(`  ✓ Hook installed in: ${path}`);
+          console.log("    Write/Edit/NotebookEdit will pass through pretool-stage-gate.sh.");
+          break;
+        case "already-present":
+          console.log(`  ✓ Already present in: ${path}`);
+          break;
+        case "dry-run":
+          console.log(`  (dry-run) Would update: ${path}`);
+          break;
+      }
+    } catch (e) {
+      console.error(`  ✗ ${e.message}`);
+      process.exit(1);
+    }
+    process.stdout.write("", () => process.exit(0));
+  }
+
+  if (args.includes("--uninstall-claude-hooks")) {
+    console.log("\n@lhi/ursamu-dev — removing Claude Code stage-gate hook\n");
+    const dryRun = args.includes("--dry-run");
+    try {
+      const { status, path } = uninstallClaudeStageGate({ dryRun });
+      switch (status) {
+        case "uninstalled":
+          console.log(`  ✓ Hook removed from: ${path}`);
+          break;
+        case "not-present":
+          console.log(`  ✓ Nothing to do — not present in: ${path}`);
+          break;
+        case "dry-run":
+          console.log(`  (dry-run) Would update: ${path}`);
+          break;
+      }
+    } catch (e) {
+      console.error(`  ✗ ${e.message}`);
+      process.exit(1);
+    }
     process.stdout.write("", () => process.exit(0));
   }
 
@@ -277,3 +330,4 @@ Examples:
 
   process.stdout.write(finalMsg, () => process.exit(exitCode));
 }
+/* node:coverage enable */

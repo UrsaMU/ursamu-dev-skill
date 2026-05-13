@@ -1,6 +1,7 @@
-import { describe, it } from "node:test";
+import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { join, dirname } from "path";
+import { mkdirSync, writeFileSync, rmSync } from "fs";
 import { fileURLToPath } from "url";
 import { scan, assertSafePath } from "../../lib/scanner.js";
 
@@ -51,5 +52,62 @@ describe("scan", () => {
         assert.ok(!f.rel.startsWith("/"), `rel "${f.rel}" should not start with /`);
       }
     }
+  });
+});
+
+// ── Additional branch coverage ────────────────────────────────────────────────
+
+describe("scan branch coverage", () => {
+  const TMP = join(process.cwd(), ".test-tmp", "scanner-branch");
+
+  before(() => { mkdirSync(TMP, { recursive: true }); });
+  after(() => { rmSync(TMP, { recursive: true, force: true }); });
+
+  it("includes .md files (README.md) in plugin collectFiles", () => {
+    // A plugin with both .ts and .md files exercises the ext === ".md" branch
+    const pluginDir = join(TMP, "plugins", "noted");
+    mkdirSync(pluginDir, { recursive: true });
+    writeFileSync(join(pluginDir, "index.ts"), "export const plugin = {};", "utf8");
+    writeFileSync(join(pluginDir, "README.md"), "# Noted\n", "utf8");
+
+    const units = scan(TMP);
+    const plugin = units.find(u => u.name === "noted");
+    assert.ok(plugin, "should find the 'noted' plugin");
+    assert.ok(plugin.files.some(f => f.rel === "README.md"), "README.md should be included");
+  });
+
+  it("ignores files that are not .ts or .md in plugins", () => {
+    // A .json file in a plugin dir — hits the 'else' branch of isFile && (ts || md)
+    const pluginDir = join(TMP, "plugins", "jsonplugin");
+    mkdirSync(pluginDir, { recursive: true });
+    writeFileSync(join(pluginDir, "index.ts"), "export const plugin = {};", "utf8");
+    writeFileSync(join(pluginDir, "config.json"), '{"key":"val"}', "utf8");
+
+    const units = scan(TMP);
+    const plugin = units.find(u => u.name === "jsonplugin");
+    assert.ok(plugin, "should find the plugin");
+    assert.ok(!plugin.files.some(f => f.rel === "config.json"), ".json should be excluded");
+  });
+
+  it("ignores non-.ts entries in commands directory", () => {
+    // A .js file in commands/ — hits !entry.isFile() || extname !== ".ts" continue path
+    const cmdDir = join(TMP, "commands");
+    mkdirSync(cmdDir, { recursive: true });
+    writeFileSync(join(cmdDir, "gold.ts"), "addCmd({});", "utf8");
+    writeFileSync(join(cmdDir, "helper.js"), "export const h = 1;", "utf8");
+
+    const units = scan(TMP);
+    const cmd = units.find(u => u.type === "command" && u.name === "gold");
+    assert.ok(cmd, "should find the .ts command");
+    assert.ok(!units.some(u => u.name === "helper"), ".js file should not be a command");
+  });
+
+  it("skips empty plugin directories", () => {
+    // An empty plugin dir — hits files.length === 0 continue path
+    const emptyPlugin = join(TMP, "plugins", "empty-plugin");
+    mkdirSync(emptyPlugin, { recursive: true });
+
+    const units = scan(TMP);
+    assert.ok(!units.some(u => u.name === "empty-plugin"), "empty plugin should be skipped");
   });
 });

@@ -1,0 +1,132 @@
+{
+  "$schema": "./schema.json",
+  "skill": "ursamu-dev",
+  "version": "2.0.0",
+  "description": "Trigger evals for the ursamu-dev skill. should_trigger prompts must select ursamu-dev; should_not_trigger prompts must NOT (they target collision-prone sibling skills).",
+  "should_trigger": [
+    {
+      "id": "st-01-plugin-scaffold",
+      "prompt": "Scaffold a new UrsaMU plugin called 'jukebox' with one +play command and a REST route to list tracks.",
+      "rationale": "Names UrsaMU explicitly, plugin scaffold + addCmd + registerPluginRoute — squarely in skill scope.",
+      "expect_skill": "ursamu-dev"
+    },
+    {
+      "id": "st-02-addcmd-with-db",
+      "prompt": "Add a +setflag command to my UrsaMU plugin that toggles a boolean in u.db on the target player. Lock to admin+.",
+      "rationale": "addCmd + u.db.modify + lock expression — core skill territory.",
+      "expect_skill": "ursamu-dev"
+    },
+    {
+      "id": "st-03-game-hook",
+      "prompt": "Wire a gameHooks.on('player:login') handler in my UrsaMU plugin's init() that sends a MOTD via joinSocketToRoom.",
+      "rationale": "gameHooks + v2.x socketId/joinSocketToRoom pattern — should pull stage-1 reference.",
+      "expect_skill": "ursamu-dev"
+    },
+    {
+      "id": "st-04-dbo-collection",
+      "prompt": "Design a DBO<INote> collection for my UrsaMU notes-plugin with id/playerId/text/date fields and add CRUD commands.",
+      "rationale": "DBO + plugin-scoped namespace + CRUD design — Stage 0 invariants matter.",
+      "expect_skill": "ursamu-dev"
+    },
+    {
+      "id": "st-05-rest-route",
+      "prompt": "Add an authenticated GET /api/v1/jukebox/playlists route to my UrsaMU plugin using registerPluginRoute.",
+      "rationale": "registerPluginRoute + auth guard — Stage 1 + Stage 2 audit territory.",
+      "expect_skill": "ursamu-dev"
+    },
+    {
+      "id": "st-06-format-handler",
+      "prompt": "Override NAMEFORMAT in my UrsaMU plugin so admins render with a star prefix using registerFormatHandler.",
+      "rationale": "v2.3.0+ format-attribute pipeline — explicitly covered in stage-1 v2.x section.",
+      "expect_skill": "ursamu-dev"
+    },
+    {
+      "id": "st-07-system-script",
+      "prompt": "Write a system/scripts/ sandbox script for my UrsaMU game that emails a player their stats. Use u.mail.",
+      "rationale": "system/scripts sandbox + u.mail (sandbox-only API) — Stage 1 sandbox-safety check.",
+      "expect_skill": "ursamu-dev"
+    },
+    {
+      "id": "st-08-audit-existing",
+      "prompt": "Audit this UrsaMU plugin's commands.ts for security issues — specifically check canEdit guards and stripSubs usage.",
+      "rationale": "Explicit UrsaMU audit — should beat generic code-reviewer and tdd-audit because of domain terms.",
+      "expect_skill": "ursamu-dev",
+      "near_miss_for": ["code-reviewer", "tdd-audit", "security-review"]
+    },
+    {
+      "id": "st-09-mock-sdk-tests",
+      "prompt": "Write Deno tests for my UrsaMU +gold command using mockU and mockPlayer helpers — cover happy path, null target, permission denied.",
+      "rationale": "UrsaMU-specific Deno test patterns + mockU — should beat tdd-workflows/test-driven-development.",
+      "expect_skill": "ursamu-dev",
+      "near_miss_for": ["tdd-workflows-tdd-cycle", "test-driven-development"]
+    },
+    {
+      "id": "st-10-lockfunc",
+      "prompt": "Register a custom lockfunc called 'ingame' in my UrsaMU plugin so locks like 'flag(player) && ingame()' work.",
+      "rationale": "v2.2.0+ registerLockFunc + && operator — exact v2.x extension-point pattern.",
+      "expect_skill": "ursamu-dev"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "id": "snt-01-rhostmush-softcode",
+      "prompt": "Help me write a RhostMUSH softcode @function that returns the number of connected players.",
+      "rationale": "RhostMUSH softcode is mush-architect / mush-natural territory, NOT UrsaMU TypeScript. Description must disambiguate.",
+      "expect_skill_in": ["mush-architect", "mush-natural"]
+    },
+    {
+      "id": "snt-02-pennmush-bboard",
+      "prompt": "Scaffold a PennMUSH bulletin board with post/read/reply commands.",
+      "rationale": "PennMUSH + softcode bboard belongs to mush-bboard / mush-architect.",
+      "expect_skill_in": ["mush-bboard", "mush-architect"]
+    },
+    {
+      "id": "snt-03-generic-tdd",
+      "prompt": "Walk me through a TDD red-green-refactor cycle for a Python parser.",
+      "rationale": "Generic TDD with no UrsaMU/Deno/MUSH context — should land on tdd-workflows-tdd-cycle / test-driven-development.",
+      "expect_skill_in": ["tdd-workflows-tdd-cycle", "test-driven-development"]
+    },
+    {
+      "id": "snt-04-pr-review",
+      "prompt": "Review the changes on my current branch and give me code review feedback.",
+      "rationale": "Generic PR review — code-reviewer / review skill, not ursamu-dev.",
+      "expect_skill_in": ["code-reviewer", "review"]
+    },
+    {
+      "id": "snt-05-readme",
+      "prompt": "Write a comprehensive README.md for my open-source library.",
+      "rationale": "Generic README authoring — readme / documentation skill, not ursamu-dev.",
+      "expect_skill_in": ["readme", "documentation"]
+    },
+    {
+      "id": "snt-06-spec-driven",
+      "prompt": "I want to spec-out a new feature before writing any code. Let's do specify → plan → implement → verify.",
+      "rationale": "Spec-driven-development orchestrator — strong overlap with our stage workflow but no UrsaMU signal. Should route to sdd.",
+      "expect_skill_in": ["sdd", "writing-plans", "concise-planning"]
+    },
+    {
+      "id": "snt-07-tdd-audit-only",
+      "prompt": "Run a TDD audit on my Node.js Express API for OWASP-class vulnerabilities.",
+      "rationale": "tdd-audit explicitly targets adversarial security review — no UrsaMU markers in the prompt.",
+      "expect_skill_in": ["tdd-audit", "security-review"]
+    },
+    {
+      "id": "snt-08-discord-bot",
+      "prompt": "Add a slash command to my UrsaMU Discord bot that pings online players.",
+      "rationale": "Says 'UrsaMU' but the work is Discord bot code, not the MUSH engine. SKILL.md 'Do not use when' explicitly excludes this.",
+      "expect_skill_in": []
+    },
+    {
+      "id": "snt-09-mushcode-engine",
+      "prompt": "How does the TinyMUX 2.x softcode engine evaluate user functions?",
+      "rationale": "Question about softcode interpreter internals — mush-architect / mush-format territory, not UrsaMU plugin authoring.",
+      "expect_skill_in": ["mush-architect", "mush-format"]
+    },
+    {
+      "id": "snt-10-api-docs",
+      "prompt": "Generate OpenAPI specs from my existing Express route handlers.",
+      "rationale": "Generic API documentation, not UrsaMU REST. api-documentation skill.",
+      "expect_skill_in": ["api-documentation", "documentation"]
+    }
+  ]
+}

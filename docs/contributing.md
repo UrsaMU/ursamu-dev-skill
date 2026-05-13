@@ -24,8 +24,11 @@ node bin/audit.js --help               # audit CLI
 node bin/scaffold.js --help            # scaffold CLI
 npm run test:audit                     # audit + fixer tests
 npm run test:scaffold                  # scaffold tests
-npm run test:hooks                     # hook installer tests
+npm run test:hooks                     # git pre-commit hook installer tests
+npm run test:claude-hooks              # Claude Code PreToolUse hook installer tests
 npm run test:docs                      # docs + security tests
+npm run test:deno                      # generated scaffolds type-check under deno
+npm run test:evals                     # trigger eval suite (see docs/evals.md)
 ```
 
 ## Test Suite
@@ -35,11 +38,15 @@ npm run test:docs                      # docs + security tests
 | `npm test` | Dry-run skill install to all platforms | — |
 | `npm run test:audit` | Unit + integration tests for `ursamu-audit` + fixer | 68 |
 | `npm run test:scaffold` | Unit tests for `ursamu-scaffold` templates + writer | 62 |
-| `npm run test:hooks` | Unit tests for hook installer + watcher diff utilities | 20 |
+| `npm run test:hooks` | Git pre-commit hook installer + watcher diff utilities | 20 |
+| `npm run test:claude-hooks` | Claude Code PreToolUse stage-gate installer (v2.1.0) | 10 |
 | `npm run test:docs` | Tests for `ursamu-docs` + all security tests | 97 |
+| `npm run test:deno` | Generated scaffolds type-check under Deno | — |
+| `npm run test:evals` | Trigger eval suite — see [evals.md](./evals.md) | — |
 | `npm run test:security` | Path-traversal and SSRF security tests only | — |
 
-**Total: 247 tests across 18 test files.**
+**Total: 316 tests.** See [evals.md](./evals.md) for the trigger-eval harness
+and the judge-model proxy caveat.
 
 ```
 __tests__/

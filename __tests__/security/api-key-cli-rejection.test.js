@@ -48,4 +48,16 @@ describe("[Security] L-1: --api-key is rejected on the command line", () => {
     assert.strictEqual(opts.src, "./src");
     assert.strictEqual(opts.apiKey, null);
   });
+
+  it("calls process.exit(1) for unknown flags (default: branch)", () => {
+    const origExit = process.exit;
+    let capturedCode = null;
+    process.exit = (code) => { capturedCode = code; };
+    try {
+      parseArgs(["node", "docs.js", "--not-a-real-flag"]);
+    } finally {
+      process.exit = origExit;
+    }
+    assert.equal(capturedCode, 1, "unknown flag should trigger process.exit(1)");
+  });
 });

@@ -2,7 +2,6 @@
 
 > Machine-optimized reference for code generation. Covers all public APIs,
 > types, patterns, and conventions. For human-readable guides see docs/guides/.
-
 ---
 
 ## Overview
@@ -16,7 +15,6 @@ UrsaMU is a TypeScript/Deno MUSH-style multiplayer game server. Key characterist
 - Configuration in `config/` — JSON or TOML
 - Plugins in `src/plugins/<name>/` — auto-discovered at startup
 - System scripts in `system/scripts/` — one file per command, auto-registered
-
 ---
 
 ## Import Paths
@@ -41,7 +39,6 @@ Internal plugin imports (use only within src/plugins/):
 import { addCmd } from "../../services/commands/cmdParser.ts";
 import type { IUrsamuSDK } from "../../@types/UrsamuSDK.ts";
 ```
-
 ---
 
 ## IDBObj — Game Object
@@ -70,7 +67,6 @@ Common flags:
 - `"thing"` — is an item
 - `"dark"` — hidden from lists
 - `"visual"` — others can examine without ownership
-
 ---
 
 ## IUrsamuSDK — The `u` Object
@@ -123,7 +119,6 @@ interface IUrsamuSDK {
   ui:     IUrsamuUI;     // web client only
 }
 ```
-
 ---
 
 ## u.db — Database
@@ -158,7 +153,6 @@ await u.db.destroy(obj.id);
 
 > **IMPORTANT**: `u.db.modify(id, op, data)` — `op` must be `"$set"`, `"$unset"`,
 > or `"$inc"`. Passing `"name"`, `"state"`, or any other string does nothing.
-
 ---
 
 ## u.util — Utilities
@@ -198,7 +192,6 @@ u.util.template(
 u.util.getMapData?.(targetId, radius)
 u.util.parseDesc?.(desc, actor, target)  // async, optional
 ```
-
 ---
 
 ## u.auth — Authentication
@@ -209,7 +202,6 @@ await u.auth.login(playerId);                         // connect player
 const hash = await u.auth.hash("plaintext");          // bcrypt hash
 await u.auth.setPassword(playerId, "newpassword");    // change password
 ```
-
 ---
 
 ## u.sys — Server Control
@@ -231,7 +223,6 @@ await u.sys.setGameTime({ year: 1340, month: 3, day: 15, hour: 8, minute: 0 });
 
 // IGameTime fields: year, month (1-12), day (1-28), hour (0-23), minute (0-59)
 ```
-
 ---
 
 ## u.chan — Channels
@@ -260,7 +251,6 @@ const history = await u.chan.history("public");          // last 20
 const history = await u.chan.history("public", 50);      // last 50
 // → [{ id, playerName, message, timestamp }, ...]
 ```
-
 ---
 
 ## u.bb — Bulletin Boards
@@ -290,7 +280,6 @@ await u.bb.deletePost(boardId, postNum);
 await u.bb.createBoard("General", { description: "General chat", order: 1 });
 await u.bb.destroyBoard(boardId);
 ```
-
 ---
 
 ## u.text — Named Text Blobs
@@ -302,7 +291,6 @@ const motd = await u.text.read("motd");           // → string (empty if not se
 await u.text.set("motd", "Welcome to the game!");
 await u.text.set("motd", "");                     // clear
 ```
-
 ---
 
 ## u.attr — Object Attributes
@@ -314,7 +302,6 @@ const val: string | null = await u.attr.get(objectId, "SHORT-DESC");
 const val = await u.attr.get(u.me.id, "FINGER-INFO");
 // Attribute names are case-insensitive. Returns null if not set.
 ```
-
 ---
 
 ## u.mail — Player Mail (sandbox scripts only)
@@ -349,7 +336,6 @@ await u.mail.modify({ id: messageId }, "$set", { read: true });
 //   bcc?: string[], subject: string, message: string,
 //   read: boolean, date: number }
 ```
-
 ---
 
 ## u.events — Server-Wide Pub/Sub
@@ -362,7 +348,6 @@ await u.events.emit("player.levelup", { id: u.me.id, level: 5 });
 const subId = await u.events.on("player.levelup", "LEVELUP_HANDLER");
 // The attribute value is a script that receives event data
 ```
-
 ---
 
 ## u.ui — Web Client UI (web client only)
@@ -383,7 +368,6 @@ const html = u.ui.render("<b>{{name}}</b>", { name: "Alice" });
 // Build a panel
 u.ui.panel({ type: "list", title: "Who's Online", content: players });
 ```
-
 ---
 
 ## u.trigger / u.eval
@@ -397,7 +381,6 @@ await u.trigger(u.me.id, "ACONNECT");
 // Evaluate an attribute and return its output as a string
 const result = await u.eval("#42", "FORMULA", ["arg1", "arg2"]);
 ```
-
 ---
 
 ## u.forceAs
@@ -408,7 +391,6 @@ Execute a command as another object (requires wizard/admin).
 await u.forceAs(npcId, "say Welcome, traveler!");
 await u.forceAs(objectId, "look");
 ```
-
 ---
 
 ## ICmd — Command Registration
@@ -461,7 +443,6 @@ addCmd({
 | `"player+"` | Has player flag or higher |
 | `"!dark"` | Must NOT have dark flag |
 | `"wizard\|admin"` | wizard OR admin |
-
 ---
 
 ## IPlugin — Plugin Lifecycle
@@ -499,7 +480,6 @@ export const plugin: IPlugin = {
 ```
 
 Plugin is auto-discovered when placed in `src/plugins/<name>/index.ts`.
-
 ---
 
 ## Exported Functions
@@ -564,7 +544,6 @@ const room = await createObj({
 import { mu } from "jsr:@ursamu/ursamu";
 await mu();
 ```
-
 ---
 
 ## GameHooks — Engine Event Bus
@@ -609,7 +588,6 @@ await gameHooks.emit("player:login", payload);
 | `scene:set` | `sceneId`, `sceneName`, `roomId`, `actorId`, `actorName`, `description` |
 | `scene:title` | `sceneId`, `oldName`, `newName`, `actorId`, `actorName` |
 | `scene:clear` | `sceneId`, `sceneName`, `actorId`, `actorName`, `status` |
-
 ---
 
 ## Script System
@@ -640,7 +618,6 @@ u.send(`You have ${gold} gold.`);
 Workers support standard ESM imports BUT:
 - JSR sub-path imports (`jsr:@std/fmt/printf`) do NOT work — use u.util.sprintf instead
 - Cannot import from `jsr:@ursamu/ursamu` inside scripts — use the `u` global
-
 ---
 
 ## MUSH Color Codes
@@ -669,7 +646,6 @@ u.send(u.util.center("%ch=== NEWS ===%cn", 78, "="));
 ```
 
 Strip all codes: `u.util.stripSubs(str)` — use before storing or measuring length.
-
 ---
 
 ## Project Layout
@@ -689,7 +665,6 @@ config/            Game configuration (config.json / config.toml)
 docs/              Documentation site (Lume static site generator)
 tests/             Test suite (Deno test)
 ```
-
 ---
 
 ## Common Patterns
@@ -792,7 +767,6 @@ export const plugin: IPlugin = {
   remove: () => { gameHooks.off("player:login", onLogin); },
 };
 ```
-
 ---
 
 ## REST API — Core Endpoints
@@ -819,42 +793,6 @@ Authentication: pass `Authorization: Bearer <jwt>` header.
 | `POST` | `/api/v1/wiki` | Staff | Create page |
 | `PATCH` | `/api/v1/wiki/:path` | Staff | Update page |
 | `DELETE` | `/api/v1/wiki/:path` | Staff | Delete page |
-
----
-
-## rhost-vision Plugin — Layout Utilities
-
-`rhost-vision` is a community plugin maintained by
-[chogan1981](https://github.com/chogan1981/ursamu-rhost-vision). Install it via
-the UrsaMU CLI:
-
-```bash
-ursamu plugin install https://github.com/chogan1981/ursamu-rhost-vision
-```
-
-Once installed at `src/plugins/rhost-vision/`, `layout.ts` provides typed helpers.
-Native commands can import from it directly:
-
-```typescript
-import { header, footer, divider, wrap, table, bar, sheet, nColumns, visibleLength }
-  from "../../plugins/rhost-vision/layout.ts";
-import { defaultTheme } from "../../plugins/rhost-vision/theme.ts";
-```
-
-Sandbox scripts use `inlineUtils(theme)` to embed helpers as generated JS.
-
-| Function | Signature | Returns |
-|----------|-----------|---------|
-| `visibleLength(s)` | `(s: string) => number` | Visible char count (no MUSH codes) |
-| `header(title, theme)` | | Full-width `=== Title ===` header |
-| `footer(theme)` | | Full-width `===...` footer |
-| `divider(label\|null, theme)` | | Full-width `--- Label ---` divider |
-| `wrap(text, width, indent?)` | | `string[]` — word-wrapped lines |
-| `bar(filled, total, barWidth, theme)` | | Progress bar string |
-| `sheet(fields, labelWidth, theme)` | | Character sheet with bars |
-| `table(headers, rows, colWidths, width, theme)` | | Bordered table |
-| `nColumns(items, n, totalWidth, gap?)` | | `string[]` — N-column layout |
-
 ---
 
 ---
@@ -946,7 +884,173 @@ the architectural problem.
 
 Result: discord no longer declares a `jobs` dependency. It reacts to job
 events whether or not it knows jobs is installed.
-
 ---
 
 *Generated from `src/@types/UrsamuSDK.ts`, `src/services/Sandbox/worker.ts`, and source review. Last updated: 2026-03-22.*
+
+---
+
+## v2.x Additions (not yet in `docs/llms.md`)
+
+The following public APIs exist in engine v2.0.0 – v2.3.4 but are not yet covered by the auto-generated reference above. Treat this section as authoritative for v2.x plugin authoring.
+
+### `engine:ready` hook (v1.9.30+)
+
+Fires once after **all** plugins load and STARTUP attributes finish running. Use for cross-plugin wiring that requires every other plugin's `init()` to have completed.
+
+```typescript
+import { gameHooks } from "jsr:@ursamu/ursamu";
+
+const onReady = () => { /* safe to look up other plugins' DBOs here */ };
+
+init: () => {
+  gameHooks.on("engine:ready", onReady);
+  return true;
+},
+remove: () => {
+  gameHooks.off("engine:ready", onReady);
+}
+```
+
+Payload: none. Handler signature: `() => void | Promise<void>`.
+
+### `registerCmdMiddleware` (v1.9.27+)
+
+Prepend a middleware to the command pipeline. Use for cross-cutting concerns like channel aliases, custom intent matching, or audit logging — **not** for command registration (use `addCmd`).
+
+```typescript
+import { registerCmdMiddleware } from "jsr:@ursamu/ursamu";
+
+registerCmdMiddleware(async (ctx, next) => {
+  if (await matchChannel(ctx)) return;  // short-circuit
+  await next();                          // pass through
+});
+```
+
+`ctx` contains `socket`, `msg`, `data`. Always call `next()` unless intentionally consuming the input. Middleware runs **before** built-in command matching, so channel aliases beat command names.
+
+### `registerLockFunc` + `&&` / `||` operators (v2.2.0+)
+
+Register custom lock functions usable in any lock expression:
+
+```typescript
+import { registerLockFunc } from "jsr:@ursamu/ursamu";
+
+registerLockFunc("ingame", (enactor, _target, _args) => {
+  return enactor.flags.has("connected");
+});
+```
+
+Reserved built-in names (`flag`, `attr`, `type`, `is`, `holds`, `perm`) are protected — re-registering them silently no-ops.
+
+Lock expressions now support short-circuit `&&` / `||` in addition to single `&` / `|`:
+
+```
+flag(connected) && ingame()
+flag(admin) || flag(wizard)
+```
+
+### `socketId` on `SessionEvent` (v1.9.27+)
+
+`SessionEvent` (payload of `player:login`, `player:logout`, etc.) now carries an optional `socketId?: string` — the WebSocket id of the connection that triggered the event. Plugins use it with `joinSocketToRoom` to attach the new socket to channels or rooms after login.
+
+### `joinSocketToRoom` (v1.9.27+)
+
+```typescript
+import { joinSocketToRoom } from "jsr:@ursamu/ursamu";
+
+gameHooks.on("player:login", ({ actorId, socketId }) => {
+  if (!socketId) return;
+  joinSocketToRoom(socketId, `player:${actorId}`);
+});
+```
+
+### Format-attribute pipeline (v2.3.0+)
+
+Resolution order for display slots is now:
+1. Softcode attribute on the target (e.g. `@nameformat`) — **highest**
+2. Plugin-registered `FormatHandler` for the slot
+3. Built-in default rendering — **lowest**
+
+Built-in slots: `NAMEFORMAT`, `DESCFORMAT`, `CONFORMAT`, `EXITFORMAT`, `WHOFORMAT`, `WHOROWFORMAT`, `PSFORMAT`, `PSROWFORMAT`. Plugins may invent their own uppercase slot names (`MAILFORMAT`, `BBROWFORMAT`, etc.) — the `FormatSlot` type is open via `string & {}`.
+
+```typescript
+import {
+  registerFormatHandler,
+  unregisterFormatHandler,
+} from "jsr:@ursamu/ursamu";
+import type { FormatSlot } from "jsr:@ursamu/ursamu";
+
+const renderName = async (_u, target, _defaultArg) => {
+  return target.flags.has("admin") ? `★ ${target.name}` : null;  // null → fall through
+};
+
+init: () => {
+  registerFormatHandler("NAMEFORMAT", renderName);
+  return true;
+},
+remove: () => {
+  unregisterFormatHandler("NAMEFORMAT", renderName);
+}
+```
+
+Handler returns `string` to override or `null` to fall through to the next layer.
+
+### `resolveFormat` / `resolveFormatOr` (v2.3.2+)
+
+For commands that want to render a slot themselves (e.g. building a custom `+sheet`), call `u.util.resolveFormat` or the standalone helper:
+
+```typescript
+import { resolveFormat, resolveFormatOr } from "jsr:@ursamu/ursamu";
+
+// Returns null if neither softcode nor plugin handler produced output
+const rendered = await u.util.resolveFormat(target, "NAMEFORMAT", target.name);
+
+// Always returns a string (uses fallback if both layers return null)
+const safe = await resolveFormatOr(u, target, "NAMEFORMAT", target.name, target.name);
+```
+
+v2.3.4 widened `FormatSlot` to `string & {}`, so plugin-defined slots (e.g. `"MAILFORMAT"`) pass type-check without casting.
+
+### Native layout helpers (v2.3.0+)
+
+`header`, `divider`, `footer` are now exported from `jsr:@ursamu/ursamu` directly — no plugin install required. Use these for any native command output that needs framed sections:
+
+```typescript
+import { header, divider, footer } from "jsr:@ursamu/ursamu";
+
+u.send(header("Character Sheet", u.theme));
+u.send(divider("Stats", u.theme));
+u.send(footer(u.theme));
+```
+
+### ObjectAccessor bridge (v2.0.0+)
+
+The TinyMUX 2.x softcode engine (`@ursamu/mushcode` v0.6+) communicates with the world through an `ObjectAccessor` interface (`getAttr`, `resolveTarget`, `getName`, `hasFlag`, `getMoniker`, `getLocation`, `getContents`, `getConnectedPlayers`, `getParentChain`). Plugin authors do **not** call this directly — it is invoked by `softcodeService.runSoftcode()` when evaluating softcode. The shape is exposed via `softcodeService` for plugin tests that need to stub it.
+
+### `softcodeService` export
+
+```typescript
+import { softcodeService } from "jsr:@ursamu/ursamu";
+
+const out = await softcodeService.runSoftcode("[ucstr(hello world)]", {
+  actorId: u.me.id,
+  executorId: target.id,
+  args: [],
+  socketId: u.socketId,
+});
+```
+
+Useful when a command needs to evaluate a softcode expression stored in user data without going through an attribute.
+
+### Default-loaded plugins (v1.9.32+)
+
+`help`, `builder`, and `channel` are loaded by default. Plugin authors must avoid command name collisions with these — notably `+help`, `@dig`, `@create`, `@destroy`, `+channel`, channel alias prefixes.
+
+### Builder privilege level
+
+Builder flag is `lvl: 7` (not changed in v2.x — the commit "builder privilege level returns 1 instead of 2" referred to a different perm-table boundary, not the flag level itself). Lock expressions like `"connected builder+"` continue to work via flag-hierarchy comparison.
+
+---
+
+*v2.x appendix last updated: 2026-05-12.*

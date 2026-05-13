@@ -147,26 +147,13 @@ For comprehensive test suite development:
 
 Use this approach by adding `--suite` flag for batch test development.
 
-## Validation Checkpoints
+## Validation Checkpoints (AAAK)
 
-### RED Phase Validation
-- [ ] All tests written before implementation
-- [ ] All tests fail with meaningful error messages
-- [ ] Test failures are due to missing implementation
-- [ ] No test passes accidentally
-
-### GREEN Phase Validation
-- [ ] All tests pass
-- [ ] No extra code beyond test requirements
-- [ ] Coverage meets minimum thresholds
-- [ ] No test was modified to make it pass
-
-### REFACTOR Phase Validation
-- [ ] All tests still pass after refactoring
-- [ ] Code complexity reduced
-- [ ] Duplication eliminated
-- [ ] Performance improved or maintained
-- [ ] Test readability improved
+```
+GATE:RED      tests-first | fail:meaningful | fail:missing-impl | no-false-pass
+GATE:GREEN    all-pass | no-extra-code | coverage≥threshold | no-test-modified
+GATE:REFACTOR all-pass | complexity↓ | duplication↓ | perf≥before | readability↑
+```
 
 ## Coverage Reports
 

@@ -109,13 +109,11 @@ Set up interactive API documentation using the generated OpenAPI spec.
 Set up automated OpenAPI spec generation and validation in CI/CD.
 ```
 
-## Quality Gates
+## Quality Gates (AAAK)
 
-- [ ] OpenAPI spec complete and valid
-- [ ] Developer guide written
-- [ ] Code examples tested and working
-- [ ] Interactive docs functional
-- [ ] Documentation deployed and linked from README
+```
+CHECK: openapi:complete+valid | guide:written | examples:tested | interactive:live | deployed→README
+```
 
 ## Best Practices
 

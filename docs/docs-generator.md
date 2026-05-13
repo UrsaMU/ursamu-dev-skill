@@ -36,7 +36,7 @@ LLM_API_KEY=... ursamu-docs --provider custom --base-url https://my-llm.example.
 | `--provider <name>` | `anthropic` \| `google` \| `openai` \| `custom` | auto-detect |
 | `--model <id>` | Override default model for selected provider | provider default |
 | `--base-url <url>` | OpenAI-compatible base URL (requires `--provider custom`) | — |
-| `--api-key <key>` | API key override ⚠ visible in shell history — prefer env vars | — |
+| ~~`--api-key <key>`~~ | **Removed in v2.x — rejected at parse time.** Use env vars. | — |
 | `--max-tokens <n>` | Max tokens per LLM call (max: 100,000) | `4096` |
 | `--dry-run` | Print config and discovered files; skip LLM calls | off |
 | `--help` | Show help | — |

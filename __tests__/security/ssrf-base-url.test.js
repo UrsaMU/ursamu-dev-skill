@@ -173,4 +173,51 @@ describe("H1 — SSRF: --base-url validation", () => {
       resolve({ provider: "anthropic", apiKey: "test-key" })
     );
   });
+
+  // ── IPv4-mapped IPv6 bypass (M-1) ──────────────────────────────────────────
+  // ::ffff:hhhh:hhhh is the WHATWG-normalized form of IPv4-mapped IPv6.
+  // These must be rejected because they resolve to private/loopback IPv4.
+
+  it("[M-1] rejects ::ffff:7f00:1 (IPv4-mapped 127.0.0.1 loopback)", () => {
+    assert.throws(
+      () => resolve(CUSTOM("https://[::ffff:7f00:1]/v1")),
+      /private|loopback|reserved|mapped/i
+    );
+  });
+
+  it("[M-1] rejects ::ffff:c0a8:101 (IPv4-mapped 192.168.1.1)", () => {
+    assert.throws(
+      () => resolve(CUSTOM("https://[::ffff:c0a8:101]/v1")),
+      /private|loopback|reserved|mapped/i
+    );
+  });
+
+  it("[M-1] rejects ::ffff:a00:1 (IPv4-mapped 10.0.0.1)", () => {
+    assert.throws(
+      () => resolve(CUSTOM("https://[::ffff:a00:1]/v1")),
+      /private|loopback|reserved|mapped/i
+    );
+  });
+
+  it("[M-1] rejects ::ffff:a9fe:a9fe (IPv4-mapped 169.254.169.254 metadata)", () => {
+    assert.throws(
+      () => resolve(CUSTOM("https://[::ffff:a9fe:a9fe]/v1")),
+      /private|loopback|reserved|mapped/i
+    );
+  });
+
+  it("[M-1] accepts ::ffff:8080:808 (IPv4-mapped 128.128.8.8 — public)", () => {
+    assert.doesNotThrow(() =>
+      resolve(CUSTOM("https://[::ffff:8080:808]/v1"))
+    );
+  });
+
+  // ── Invalid URL string (L-1) ───────────────────────────────────────────────
+
+  it("[L-1] rejects a completely unparseable URL string", () => {
+    assert.throws(
+      () => resolve(CUSTOM("not-a-url-at-all")),
+      /not a valid url/i
+    );
+  });
 });

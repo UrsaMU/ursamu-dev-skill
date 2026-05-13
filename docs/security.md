@@ -56,3 +56,21 @@ Symlinks are never followed.
 | `--stage` | Integer in `[0, 9]` |
 | `--max-tokens` | Positive integer ≤ 100,000 |
 | `CODEX_HOME` | Must resolve to a path inside `$HOME` |
+
+## Defense in depth — PreToolUse stage-gate
+
+The optional Claude Code PreToolUse hook (`--install-claude-hooks`,
+documented in [hooks.md](./hooks.md)) is a defense-in-depth measure layered
+on top of — not a replacement for — the Stage 2 audit. It prevents
+Write/Edit/NotebookEdit calls into the plugin tree from racing ahead of a
+confirmed Design Plan, which closes a class of autonomous-run failure modes
+(LLM ignoring the soft Stage 0 gate, writing under-specified code that then
+fails the audit). The audit checklist still runs at Stage 2 regardless of
+whether the hook is installed.
+
+## API keys via env vars only
+
+As of v2.x, `ursamu-docs --api-key <key>` is **rejected at parse time** to
+prevent secrets from leaking into shell history and `ps`-style process
+listings. Use `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GOOGLE_API_KEY` (or
+`LLM_API_KEY` for custom providers) as environment variables only.

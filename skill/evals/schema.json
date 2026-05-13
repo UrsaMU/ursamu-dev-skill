@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ursamu-dev evals",
+  "type": "object",
+  "required": ["skill", "version", "should_trigger", "should_not_trigger"],
+  "properties": {
+    "skill": { "type": "string" },
+    "version": { "type": "string" },
+    "description": { "type": "string" },
+    "should_trigger": {
+      "type": "array",
+      "minItems": 5,
+      "items": {
+        "type": "object",
+        "required": ["id", "prompt", "rationale", "expect_skill"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^st-[0-9]{2}" },
+          "prompt": { "type": "string" },
+          "rationale": { "type": "string" },
+          "expect_skill": { "type": "string" },
+          "near_miss_for": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "should_not_trigger": {
+      "type": "array",
+      "minItems": 5,
+      "items": {
+        "type": "object",
+        "required": ["id", "prompt", "rationale"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^snt-[0-9]{2}" },
+          "prompt": { "type": "string" },
+          "rationale": { "type": "string" },
+          "expect_skill_in": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

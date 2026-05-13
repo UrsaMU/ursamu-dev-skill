@@ -253,3 +253,31 @@ describe("fixFile", () => {
     assert.deepEqual(result.skippedChecks, []);
   });
 });
+
+// ── applyFixesToLines — edge cases ────────────────────────────────────────────
+
+describe("applyFixesToLines edge cases", () => {
+  it("skips check-09 when line number is out of bounds", () => {
+    const lines = [`import { x } from "@ursamu/ursamu";`];
+    const v = { file: "/f.ts", line: 999, check: "check-09", level: "warn", message: "" };
+    const { lines: out, applied } = applyFixesToLines(lines, [v]);
+    assert.equal(applied, 0, "out-of-bounds line should not be applied");
+    assert.equal(out[0], lines[0], "original line should be unchanged");
+  });
+
+  it("does not increment applied when regex does not match the line", () => {
+    // Line doesn't contain '@ursamu/ursamu' — replacement is a no-op
+    const lines = [`import { x } from "jsr:@ursamu/ursamu";`]; // already has jsr:
+    const v = { file: "/f.ts", line: 1, check: "check-09", level: "warn", message: "" };
+    const { applied } = applyFixesToLines(lines, [v]);
+    assert.equal(applied, 0, "already-fixed line should not increment applied count");
+  });
+
+  it("handles check-15 when no init block exists in file", () => {
+    // File has no init() function — extractBlock returns null, applied stays 0
+    const lines = [`const x = 1;`, `export default {};`];
+    const v = { file: "/f.ts", line: 1, check: "check-15", level: "error", message: "" };
+    const { applied } = applyFixesToLines(lines, [v]);
+    assert.equal(applied, 0, "no-init file should not apply check-15 fix");
+  });
+});

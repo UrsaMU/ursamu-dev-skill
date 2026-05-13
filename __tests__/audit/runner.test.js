@@ -3,9 +3,10 @@
  * Tests against fixture files in __fixtures__/passing/ and __fixtures__/failing/.
  */
 
-import { describe, it } from "node:test";
+import { describe, it, after } from "node:test";
 import assert from "node:assert/strict";
 import { join, dirname } from "path";
+import { mkdirSync, writeFileSync, rmSync, symlinkSync } from "fs";
 import { fileURLToPath } from "url";
 import { runAudit } from "../../lib/audit/runner.js";
 
@@ -117,5 +118,65 @@ describe("runAudit", () => {
   it("throws for a non-directory path", () => {
     const singleFile = join(FIXTURES, "passing", "clean-plugin.ts");
     assert.throws(() => runAudit(singleFile), /not a directory/i);
+  });
+
+  // ── runner.js collectFiles() depth and file limits ────────────────────────
+
+  describe("collectFiles() limits inside runAudit", () => {
+    // Use a temp dir under cwd so assertSafePath passes
+    const TMP = join(__dirname, "__runner-tmp__");
+    after(() => rmSync(TMP, { recursive: true, force: true }));
+
+    it("throws when directory nesting exceeds MAX_DEPTH (8)", () => {
+      // Build a 9-level deep directory chain containing a .ts file at the leaf
+      let dir = join(TMP, "deep");
+      for (let i = 0; i <= 8; i++) dir = join(dir, `d${i}`);
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, "leaf.ts"), "export const x = 1;\n", "utf8");
+
+      assert.throws(
+        () => runAudit(join(TMP, "deep")),
+        /nesting depth|maximum/i
+      );
+    });
+
+    it("throws when more than MAX_FILES (500) source files are found", () => {
+      const manyDir = join(TMP, "many");
+      mkdirSync(manyDir, { recursive: true });
+      // Create 501 .ts files
+      for (let i = 0; i < 501; i++) {
+        writeFileSync(join(manyDir, `f${i}.ts`), "export const x = 1;\n", "utf8");
+      }
+
+      assert.throws(
+        () => runAudit(manyDir),
+        /more than 500|source files/i
+      );
+    });
+
+    it("recursively descends into subdirectories within depth limit", () => {
+      const subDir = join(TMP, "sub", "inner");
+      mkdirSync(subDir, { recursive: true });
+      writeFileSync(join(subDir, "plugin.ts"), "export const x = 1;\n", "utf8");
+
+      const { fileCount } = runAudit(join(TMP, "sub"));
+      assert.ok(fileCount >= 1, "should find files in subdirectories");
+    });
+
+    it("skips symlinks — does not follow them into the results", () => {
+      const linkDir = join(TMP, "with-symlink");
+      mkdirSync(linkDir, { recursive: true });
+      writeFileSync(join(linkDir, "real.ts"), "export const r = 1;\n", "utf8");
+      // Create a symlink pointing to the real file
+      try {
+        symlinkSync(join(linkDir, "real.ts"), join(linkDir, "link.ts"));
+      } catch {
+        // If symlinks aren't supported (rare), skip silently
+        return;
+      }
+      const { fileCount } = runAudit(linkDir);
+      // Only real.ts should be counted — the symlink must be skipped
+      assert.equal(fileCount, 1, "symlink should not be included in fileCount");
+    });
   });
 });

@@ -1,54 +1,79 @@
 # Architecture
 
+## Engine target
+
+This package targets **`@ursamu/ursamu ≥ 2.3.4`**. Plugins still on the v1.9.x
+engine should pin `@lhi/ursamu-dev@^1`; the v2 line assumes v2.x APIs are
+available.
+
+## v2.x extension points
+
+The skill and `api-reference.md` document the following v2.x additions
+(authoritative coverage lives in `skill/references/api-reference.md`):
+
+| API | Engine version | Notes |
+|-----|----------------|-------|
+| Native layout helpers — `header`, `divider`, `footer` | 2.3.0+ | Replaces `rhost-vision`, which is no longer used. Import from `jsr:@ursamu/ursamu`. |
+| `engine:ready` hook | 1.9.30+ | Fires after every plugin's `init()` resolves. Use for cross-plugin wiring that needs all SDKs registered. |
+| `registerCmdMiddleware(fn)` | 1.9.27+ | Command-pipeline middleware. Must call `next()` or intentionally short-circuit. **Not hot-removable** — plugin can't be cleanly torn down. |
+| `registerLockFunc(name, fn)` with `&&` / `\|\|` short-circuit | 2.2.0+ | Custom lock vocabulary. Reserved names (`flag`, `attr`, `type`, `is`, `holds`, `perm`) are rejected. |
+| `registerFormatHandler` / `unregisterFormatHandler` / `resolveFormat` | 2.3.0+ | Format-attribute pipeline. Resolution order: softcode → plugin handler → built-in. Audit check `format-pair` enforces register/unregister parity with identical function references. |
+| `joinSocketToRoom` + `socketId` on `SessionEvent` | 1.9.27+ | Post-login socket wiring for channel-style plugins. |
+| `softcodeService` + `ObjectAccessor` | 2.x | Bridge to the v2 TinyMUX-flavor softcode engine. |
+
+`rhost-vision` is **removed** from skill guidance — use the native helpers above.
+
+## Default-loaded plugins
+
+The engine loads `help`, `builder`, and `channel` by default. New plugins
+should not register commands or DBO collections that collide with theirs (e.g.
+do not register `+help`, `@dig`, or `+channel` names).
+
 ## Directory Structure
 
 ```
 @lhi/ursamu-dev/
 ├── bin/
-│   ├── cli.js          # ursamu-dev — skill installer + hook installer
+│   ├── cli.js          # ursamu-dev — skill installer + hook installers
 │   ├── audit.js        # ursamu-audit — static analysis CLI
 │   ├── scaffold.js     # ursamu-scaffold — plugin boilerplate generator
 │   └── docs.js         # ursamu-docs — LLM-powered docs generator
 │
 ├── lib/
-│   ├── scanner.js      # source unit discovery (commands + plugins)
-│   ├── writer.js       # docs artifact writer (default + patch modes)
-│   ├── hooks.js        # git pre-commit hook installer
-│   ├── llm.js          # LLM provider resolution + SSRF guard
-│   ├── prompts.js      # SKILL.md stage extraction
+│   ├── scanner.js          # source unit discovery (commands + plugins)
+│   ├── writer.js           # docs artifact writer (default + patch modes)
+│   ├── hooks.js            # git pre-commit hook installer
+│   ├── claude-hooks.js     # Claude Code PreToolUse stage-gate installer (v2.1.0)
+│   ├── llm.js              # LLM provider resolution + SSRF guard
+│   ├── prompts.js          # SKILL.md stage extraction
 │   │
 │   ├── audit/
-│   │   ├── checks.js   # 11 pure check functions + block extractor
+│   │   ├── checks.js   # pure check functions + block extractor
 │   │   ├── runner.js   # orchestrates checks across a directory tree
 │   │   ├── reporter.js # formats violations for console or JSON
 │   │   ├── fixer.js    # auto-repairs check-09 and check-15 in place
 │   │   └── watcher.js  # fs.watch loop + pure diff utilities
 │   │
 │   └── scaffold/
-│       ├── templates.js # all file template strings (6 templates)
+│       ├── templates.js # all file template strings
 │       └── writer.js    # validates names, resolves paths, writes files
 │
 ├── skill/
-│   ├── SKILL.md                     # full skill content
-│   └── references/
-│       └── api-reference.md         # authoritative UrsaMU SDK reference
+│   ├── SKILL.md                     # thin router (v2.1.0 split)
+│   ├── references/
+│   │   ├── api-reference.md         # authoritative UrsaMU SDK reference
+│   │   ├── stage-0-design.md
+│   │   ├── stage-1-generate.md
+│   │   ├── stage-2-audit.md
+│   │   ├── stage-3-refine.md
+│   │   ├── stage-4-test.md
+│   │   ├── stage-5-docs.md
+│   │   └── example-gold.md          # full worked example
+│   ├── hooks/                       # optional PreToolUse stage-gate (v2.1.0)
+│   └── evals/                       # trigger evals (v2.1.0)
 │
-├── companion-skills/                # 8 skills installed alongside ursamu-dev
-│   ├── game-development/
-│   ├── typescript-expert/
-│   ├── typescript-advanced-types/
-│   ├── tdd-workflows-tdd-cycle/
-│   ├── error-handling-patterns/
-│   ├── docs-architect/
-│   ├── readme/
-│   └── api-documentation/
-│
+├── companion-skills/                # installed alongside ursamu-dev
 └── __tests__/
-    ├── audit/           # checks, runner, fixer tests (68 total)
-    ├── scaffold/        # templates, writer tests (62 total)
-    ├── hooks/           # hook installer + watcher diff tests (20 total)
-    ├── docs/            # LLM, scanner, writer tests (28 total)
-    └── security/        # path traversal, SSRF, DoS, NaN tests (69 total)
 ```
 
 ## Module Map
@@ -72,4 +97,9 @@ bin/docs.js
 
 bin/cli.js
   └── lib/hooks.js             (installHook, findGitRoot)
+  └── lib/claude-hooks.js      (installClaudeStageGate, uninstallClaudeStageGate)
 ```
+
+See `skill/references/api-reference.md` for engine-side API shapes;
+[hooks.md](./hooks.md) for the stage-gate marker; [audit.md](./audit.md) for
+the 18-check audit invariants.

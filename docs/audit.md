@@ -2,6 +2,18 @@
 
 Scans `.ts` and `.js` source files for violations of the UrsaMU Stage 2 audit invariants. No LLM — pure static analysis built to run in CI.
 
+> **Skill checklist vs. static checks.** The Stage 2 *skill* checklist in
+> `skill/references/stage-2-audit.md` has **18 items** as of v2.0.0 — the 15
+> below plus three v2.x additions: **`format-pair`** (`registerFormatHandler` /
+> `unregisterFormatHandler` parity with identical references),
+> **`middleware`** (`registerCmdMiddleware` calls `next()` or short-circuits
+> intentionally; plugin documented as non-hot-removable), and **`lockfunc`**
+> (`registerLockFunc` called once, not in `remove()`, no collision with
+> reserved names). Stage 2 reports are formatted `<N>/<TOTAL>` where `TOTAL`
+> reflects only the checks applicable to the feature. The CLI below covers
+> the 15 statically-decidable checks; the three v2.x checks require manual
+> review during Stage 2.
+
 ## Usage
 
 ```bash

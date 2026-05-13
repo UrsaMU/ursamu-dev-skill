@@ -182,7 +182,7 @@ GitHub Actions example (Anthropic):
  * @param {import("../lib/scanner.js").SourceUnit} unit
  * @returns {string}
  */
-function buildUserMessage(unit) {
+export function buildUserMessage(unit) {
   const header = unit.type === "plugin"
     ? `Plugin: ${unit.name}`
     : `Command file: ${unit.files[0].rel}`;
@@ -196,6 +196,7 @@ function buildUserMessage(unit) {
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
+/* node:coverage disable */
 if (isMain) {
   const opts = parseArgs(process.argv);
 
@@ -314,3 +315,4 @@ if (isMain) {
 
   process.stdout.write(summary, () => process.exit(exitCode));
 }
+/* node:coverage enable */

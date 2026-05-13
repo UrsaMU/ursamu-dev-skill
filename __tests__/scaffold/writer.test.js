@@ -4,9 +4,9 @@
 
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, rmSync, existsSync, readdirSync, readFileSync } from "fs";
+import { mkdirSync, rmSync, existsSync, readdirSync, readFileSync, writeFileSync } from "fs";
 import { join, resolve } from "path";
-import { validateName, describeFiles, writeScaffold } from "../../lib/scaffold/writer.js";
+import { validateName, describeFiles, writeScaffold, addCommandToPlugin, isUrsamuProject } from "../../lib/scaffold/writer.js";
 
 // Use a temp dir under the project so assertSafeOutPath passes
 const TMP = resolve("__tests__/scaffold/__tmp__");
@@ -191,6 +191,103 @@ describe("writeScaffold content", () => {
     const out = tmpOut("content");
     const idx = readFileSync(join(out, "index.ts"), "utf8");
     assert.ok(idx.includes('"content"'), "index.ts must contain the plugin name string");
+  });
+});
+
+// ── addCommandToPlugin ────────────────────────────────────────────────────────
+
+describe("addCommandToPlugin", () => {
+  it("appends a command block to an existing commands.ts", () => {
+    const out = tmpOut("add-cmd");
+    writeScaffold("addtest", { out });
+
+    const cmdPath = addCommandToPlugin("addtest", "+addtest-post", out);
+    assert.equal(cmdPath, join(out, "commands.ts"));
+    const content = readFileSync(cmdPath, "utf8");
+    assert.ok(content.includes("+addtest-post"), "appended block should reference the command name");
+  });
+
+  it("throws when commands.ts does not exist", () => {
+    const missing = tmpOut("no-commands-plugin");
+    mkdirSync(missing, { recursive: true });
+    assert.throws(
+      () => addCommandToPlugin("missing", "+x", missing),
+      /commands\.ts not found/i
+    );
+  });
+
+  it("throws when outRoot escapes cwd", () => {
+    assert.throws(
+      () => addCommandToPlugin("evil", "+x", "/tmp/__ursamu_addcmd_test__"),
+      /outside|traversal|permitted/i
+    );
+  });
+});
+
+// ── isUrsamuProject ───────────────────────────────────────────────────────────
+
+describe("isUrsamuProject", () => {
+  it("returns true when package.json has ursamu keyword", () => {
+    const fakeRoot = tmpOut("ursamu-keyword-pkg");
+    mkdirSync(fakeRoot, { recursive: true });
+    const pkg = { name: "test", keywords: ["ursamu", "mud"], dependencies: {}, devDependencies: {}, peerDependencies: {} };
+    writeFileSync(join(fakeRoot, "package.json"), JSON.stringify(pkg), "utf8");
+    assert.equal(isUrsamuProject(fakeRoot), true);
+  });
+
+  it("returns true when package.json has ursamu in dependencies (no keyword)", () => {
+    const fakeRoot = tmpOut("ursamu-dep-pkg");
+    mkdirSync(fakeRoot, { recursive: true });
+    const pkg = { name: "test", keywords: ["mud"], dependencies: { "jsr:@ursamu/ursamu": "^1.0" }, devDependencies: {}, peerDependencies: {} };
+    writeFileSync(join(fakeRoot, "package.json"), JSON.stringify(pkg), "utf8");
+    assert.equal(isUrsamuProject(fakeRoot), true);
+  });
+
+  it("returns true when src/plugins directory exists (no package.json)", () => {
+    const fakeRoot = tmpOut("ursamu-plugins-dir");
+    const srcPlugins = join(fakeRoot, "src", "plugins");
+    mkdirSync(srcPlugins, { recursive: true });
+    assert.equal(isUrsamuProject(fakeRoot), true);
+  });
+
+  it("returns false when neither keywords, deps, nor src/plugins match", () => {
+    const fakeRoot = tmpOut("non-ursamu-pkg");
+    mkdirSync(fakeRoot, { recursive: true });
+    const pkg = { name: "test", keywords: ["other"], dependencies: {}, devDependencies: {}, peerDependencies: {} };
+    writeFileSync(join(fakeRoot, "package.json"), JSON.stringify(pkg), "utf8");
+    assert.equal(isUrsamuProject(fakeRoot), false);
+  });
+
+  it("returns false when package.json parse fails", () => {
+    const fakeRoot = tmpOut("bad-json-pkg");
+    mkdirSync(fakeRoot, { recursive: true });
+    writeFileSync(join(fakeRoot, "package.json"), "not valid json", "utf8");
+    assert.equal(isUrsamuProject(fakeRoot), false);
+  });
+
+  it("returns false when no package.json and no src/plugins", () => {
+    const fakeRoot = tmpOut("empty-pkg");
+    mkdirSync(fakeRoot, { recursive: true });
+    assert.equal(isUrsamuProject(fakeRoot), false);
+  });
+});
+
+// ── writeScaffold — deno.json path resolution ─────────────────────────────────
+
+describe("writeScaffold with deno.json present", () => {
+  const DENO_JSON = join(resolve("."), "deno.json");
+
+  before(() => { writeFileSync(DENO_JSON, '{"version":"0.0.0"}', "utf8"); });
+  after(() => { try { rmSync(DENO_JSON, { force: true }); } catch {} });
+
+  it("index.ts contains relative path to deno.json when it exists in cwd", () => {
+    const out = tmpOut("deno-json");
+    writeScaffold("denoplugin", { out });
+    const content = readFileSync(join(out, "index.ts"), "utf8");
+    // resolveDenoJsonRelPath returns non-null — the template should embed the path
+    assert.ok(content.length > 0, "index.ts must be written");
+    // The relative path to deno.json should be in the file
+    assert.ok(content.includes("deno.json"), "index.ts must reference deno.json");
   });
 });
 
