@@ -50,7 +50,7 @@
   "author": "Lemuel Lee Canady, Jr.",
   "license": "MIT",
   "dependencies": {
-    "@lhi/tdd-audit": "latest",
+    "@lhi/tdd-audit": "file:../tdd-audit",
     "openai": "^6.32.0"
   },
   "engines": {

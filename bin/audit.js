@@ -253,32 +253,28 @@ if (isMain) {
 
   if (opts.watch) {
     startWatch(opts.path, runAudit, { noHints: opts.noHints });
-    return; // startWatch keeps the process alive
-  }
-
-  if (opts.fix) {
+  } else if (opts.fix) {
     runFixMode(opts.path, opts);
-    return;
+  } else {
+    console.log("\n@lhi/ursamu-dev audit — UrsaMU static audit\n");
+
+    let result;
+    try {
+      result = runAudit(opts.path);
+    } catch (e) {
+      process.stderr.write(`Error: ${e.message}\n`);
+      process.exit(2);
+    }
+
+    const { violations, fileCount } = result;
+
+    if (opts.json) {
+      const visible = opts.noHints ? violations.filter(v => v.level !== "hint") : violations;
+      process.stdout.write(JSON.stringify({ fileCount, violations: visible }, null, 2) + "\n");
+      process.exit(exitCode(violations));
+    }
+
+    const report = formatReport(violations, fileCount, { noHints: opts.noHints });
+    process.stdout.write(report, () => process.exit(exitCode(violations)));
   }
-
-  console.log("\n@lhi/ursamu-dev audit — UrsaMU static audit\n");
-
-  let result;
-  try {
-    result = runAudit(opts.path);
-  } catch (e) {
-    process.stderr.write(`Error: ${e.message}\n`);
-    process.exit(2);
-  }
-
-  const { violations, fileCount } = result;
-
-  if (opts.json) {
-    const visible = opts.noHints ? violations.filter(v => v.level !== "hint") : violations;
-    process.stdout.write(JSON.stringify({ fileCount, violations: visible }, null, 2) + "\n");
-    process.exit(exitCode(violations));
-  }
-
-  const report = formatReport(violations, fileCount, { noHints: opts.noHints });
-  process.stdout.write(report, () => process.exit(exitCode(violations)));
 }
