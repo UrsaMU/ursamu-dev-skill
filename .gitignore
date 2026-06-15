@@ -1,3 +1,5 @@
 __tests__/security/sample.exploit.test.js
 skill/evals/last-run.json
 .test-tmp/
+node_modules/
+.DS_Store
