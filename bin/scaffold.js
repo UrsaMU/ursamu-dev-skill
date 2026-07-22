@@ -15,6 +15,7 @@
  *   --with-routes     Include routes.ts template
  *   --with-tests      Include tests/ directory with mockU helper
  *   --out <dir>       Override output root (default: ./src/plugins/<name>)
+ *   --force           Allow scaffolding a name reserved by an official package
  *   --dry-run         Preview files that would be created; write nothing
  *   --help            Show this help
  */
@@ -37,7 +38,7 @@ import { validateName, describeFiles, writeScaffold, addCommandToPlugin, isUrsam
 
 /**
  * @param {string[]} argv
- * @returns {{ name: string|null, withRoutes: boolean, withTests: boolean, out: string|null, dryRun: boolean, help: boolean }}
+ * @returns {{ name: string|null, withRoutes: boolean, withTests: boolean, out: string|null, dryRun: boolean, force: boolean, addCommand: string|null, help: boolean }}
  */
 export function parseArgs(argv) {
   const args = argv.slice(2);
@@ -47,6 +48,7 @@ export function parseArgs(argv) {
     withTests:  false,
     out:        null,
     dryRun:     false,
+    force:      false,
     addCommand: null,
     help:       false,
   };
@@ -66,6 +68,7 @@ export function parseArgs(argv) {
       case "--with-tests":   opts.withTests   = true;        break;
       case "--out":          opts.out         = next();      break;
       case "--dry-run":      opts.dryRun      = true;        break;
+      case "--force":        opts.force       = true;        break;
       case "--add-command":  opts.addCommand  = next();      break;
       case "--help":
       case "-h":             opts.help        = true;        break;
@@ -94,7 +97,9 @@ const HELP = `
 
 Arguments:
   name              Plugin name: lowercase letters, digits, and hyphens only.
-                    Must start with a letter. (e.g. "bbs", "mail", "my-plugin")
+                    Must start with a letter. (e.g. "greeter", "faction-board")
+                    Official package names (mail, bbs, combat, jobs, …) are
+                    refused — install those packages instead of scaffolding.
 
 Options:
   --with-routes          Include routes.ts REST handler template
@@ -102,6 +107,8 @@ Options:
   --out <dir>            Override output root (default: ./src/plugins/<name>)
   --add-command <name>   Append a new addCmd() skeleton to an existing plugin's
                          commands.ts. Requires the plugin <name> positional arg.
+  --force                Allow a name reserved by an official @ursamu/* package
+                         (for monorepo package authors only)
   --dry-run              Show files that would be created/modified without writing
   --help                 Show this help
 
@@ -119,10 +126,11 @@ Files created with --with-tests:
   tests/helpers/mockU.ts     Full mockU() / mockPlayer() helper
 
 Examples:
-  ursamu-scaffold bbs
-  ursamu-scaffold mail --with-routes --with-tests
-  ursamu-scaffold bbs --add-command "+bbs-post"
+  ursamu-scaffold greeter
+  ursamu-scaffold faction-board --with-routes --with-tests
+  ursamu-scaffold greeter --add-command "+greet-all"
   ursamu-scaffold my-plugin --out ./plugins/my-plugin --dry-run
+  ursamu-scaffold mail --force   # only when authoring @ursamu/mail itself
 `;
 
 // ── Main ─────────────────────────────────────────────────────────────────────
@@ -146,13 +154,15 @@ if (isMain) {
   }
 
   try {
-    validateName(opts.name);
+    validateName(opts.name, { force: opts.force });
   } catch (e) {
     process.stderr.write(`Error: ${e.message}\n`);
     process.exit(1);
   }
 
   // --add-command mode: append a new command skeleton to an existing commands.ts
+  // Official-name check still applies so `scaffold mail --add-command …` fails
+  // unless --force (existing official package trees).
   if (opts.addCommand !== null) {
     const cmdName = opts.addCommand;
     const pluginOut = opts.out ?? (isUrsamuProject() ? `./src/plugins/${opts.name}` : `./${opts.name}`);
@@ -192,7 +202,7 @@ if (isMain) {
 
   let written;
   try {
-    written = writeScaffold(opts.name, opts);
+    written = writeScaffold(opts.name, { ...opts, force: opts.force });
   } catch (e) {
     process.stderr.write(`Error: ${e.message}\n`);
     process.exit(1);

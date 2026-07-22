@@ -15,8 +15,8 @@ ursamu-scaffold <name> [options]
 ```
 
 ```bash
-npx @lhi/ursamu-dev scaffold bbs
-npx @lhi/ursamu-dev scaffold mail --with-routes --with-tests
+npx @lhi/ursamu-dev scaffold greeter
+npx @lhi/ursamu-dev scaffold faction-board --with-routes --with-tests
 npx @lhi/ursamu-dev scaffold my-plugin --out ./plugins/my-plugin --dry-run
 ```
 
@@ -39,6 +39,7 @@ Use `--out <dir>` to override in either case.
 | `--with-tests` | Include `tests/<name>.test.ts` and `tests/helpers/mockU.ts` | off |
 | `--out <dir>` | Override the output root | see above |
 | `--add-command <name>` | Append a new `addCmd()` skeleton to an existing plugin's `commands.ts` | — |
+| `--force` | Allow a name reserved by an official `@ursamu/*` package (package authors only) | off |
 | `--dry-run` | Preview files that would be created without writing anything | off |
 | `--help` | Show help | — |
 
@@ -48,9 +49,12 @@ Plugin names must:
 - Be lowercase
 - Start with a letter
 - Contain only letters, digits, and hyphens
+- **Not** match an official first-party package slug (`mail`, `bbs`, `combat`, `jobs`, `help`, `channels`, …)
 
-**Valid:** `bbs`, `my-plugin`, `mail2`
-**Invalid:** `MyPlugin`, `my_plugin`, `123bad`, `../evil`
+**Valid:** `greeter`, `my-plugin`, `faction-board`  
+**Invalid:** `MyPlugin`, `my_plugin`, `123bad`, `../evil`, `mail`, `bbs`, `combat`
+
+Official names are refused so you install/extend the real package instead of scaffolding a fork. Catalog: `skill/references/official-packages.md` and `lib/official-packages.js`. Pass `--force` only when authoring the official package itself.
 
 ## Generated Files
 
@@ -79,7 +83,7 @@ Plugin names must:
 ## Adding a Command to an Existing Plugin
 
 ```bash
-ursamu-scaffold bbs --add-command "+bbs-post"
+ursamu-scaffold greeter --add-command "+greet-all"
 ```
 
 Appends a new `addCmd()` skeleton to the existing `commands.ts` in the plugin directory. The plugin must already exist.

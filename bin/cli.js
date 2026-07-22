@@ -180,12 +180,13 @@ Default: --claude
 Companion skills installed alongside ursamu-dev:
   game-development, typescript-expert, typescript-advanced-types,
   tdd-workflows-tdd-cycle, error-handling-patterns,
-  docs-architect, readme, api-documentation
+  docs-architect, readme, api-documentation, deno-runtime-expert,
+  mush-softcode-bridge, owasp-game-security, websocket-protocol-expert
 
 Examples:
   npx @lhi/ursamu-dev                                 Install skill for Claude Code
-  npx @lhi/ursamu-dev scaffold bbs                    Generate a new bbs plugin
-  npx @lhi/ursamu-dev scaffold mail --with-tests      Generate plugin + test files
+  npx @lhi/ursamu-dev scaffold greeter                Generate a new greeter plugin
+  npx @lhi/ursamu-dev scaffold faction-board --with-tests  Generate plugin + test files
   npx @lhi/ursamu-dev --opencode                      Install for OpenCode
   npx @lhi/ursamu-dev --all                           Install for every platform
   npx @lhi/ursamu-dev --install-hooks                 Add pre-commit audit hook

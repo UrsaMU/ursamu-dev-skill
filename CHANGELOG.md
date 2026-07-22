@@ -16,6 +16,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   reuse-before-invent rules, load-order notes, combat `CombatPorts` pattern,
   and a decision cheat-sheet so agents stop scaffolding features that already
   ship as packages.
+- **`lib/official-packages.js`** — shared JS catalog of reserved scaffold
+  slugs (mail, bbs, combat, jobs, aliases like `channel` / `map-plugin`, …).
+- **Scaffold refuses official package names.** `validateName` / `writeScaffold`
+  / `ursamu-scaffold` error with install hints when the name is reserved.
+  Escape hatch: `--force` for monorepo package authors. Tests in
+  `__tests__/scaffold/official-names.test.js`.
 
 ### Changed
 
@@ -26,6 +32,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   package reuse, peers, and load order.
 - **Stage 1 / api-reference** — prefer `jsr:@ursamu/mush` imports; document
   official package import examples; link the package catalog.
+- **Scaffold help / docs / CLI examples** — use `greeter` / `faction-board`
+  instead of `bbs` / `mail` as sample names.
 
 ---
 
