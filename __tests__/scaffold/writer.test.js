@@ -173,10 +173,11 @@ describe("writeScaffold content", () => {
     assert.ok(content.includes("Examples"), "help must contain Examples");
   });
 
-  it("commands.ts uses jsr:@ursamu/ursamu import", () => {
+  it("commands.ts uses jsr:@ursamu/mush import", () => {
     const out = tmpOut("content");
     const content = readFileSync(join(out, "commands.ts"), "utf8");
-    assert.ok(content.includes("jsr:@ursamu/ursamu"), "must use jsr: import");
+    assert.ok(content.includes("jsr:@ursamu/mush"), "must use modern engine import");
+    assert.ok(!content.includes("jsr:@ursamu/ursamu"), "must not use legacy engine import");
   });
 
   it("README.md has required section headers", () => {

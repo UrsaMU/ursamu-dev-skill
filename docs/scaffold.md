@@ -63,9 +63,9 @@ Official names are refused so you install/extend the real package instead of sca
 | File | Contents |
 |------|----------|
 | `index.ts` | `IPlugin` export with three-phase lifecycle: module-load imports `addCmd`, `init()` returns `true`, calls `registerHelpDir()`, `remove()` tears down hooks. If a `deno.json` exists at the project root, `version` is read from it automatically — single source of truth. |
-| `commands.ts` | `addCmd()` skeleton with correct `jsr:` imports, pattern, lock, `help:` with Examples, `stripSubs` in exec |
+| `commands.ts` | `addCmd()` skeleton with `jsr:@ursamu/mush` imports, pattern, lock, `help:` with Examples, `stripSubs` in exec |
 | `README.md` | Plugin documentation template with Commands, Events, Storage, REST Routes, and Notes sections |
-| `help/<name>.md` | Markdown help file registered via `registerHelpDir()`. Served by the [help-plugin](https://github.com/UrsaMU/help-plugin) `FileProvider` at priority 50, overriding the inline `help:` field. Fill in the Syntax, Switches, and Examples sections. |
+| `help/<name>.md` | Markdown help file registered via `registerHelpDir()` from `jsr:@ursamu/help`. Served by the help package `FileProvider` at priority 50, overriding the inline `help:` field. Fill in the Syntax, Switches, and Examples sections. |
 
 **With `--with-routes`:**
 

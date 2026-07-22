@@ -38,9 +38,10 @@ describe("indexTemplate", () => {
     assert.ok(out.includes('"greeter"'), "must include plugin name string");
   });
 
-  it("uses jsr:@ursamu/ursamu import", () => {
+  it("uses jsr:@ursamu/mush import", () => {
     const out = indexTemplate("greeter");
-    assert.ok(out.includes("jsr:@ursamu/ursamu"), "must use jsr: prefix");
+    assert.ok(out.includes("jsr:@ursamu/mush"), "must use modern engine import");
+    assert.ok(!out.includes("jsr:@ursamu/ursamu"), "must not use legacy engine import");
   });
 
   it("no registerPluginRoute by default", () => {
@@ -51,12 +52,17 @@ describe("indexTemplate", () => {
   it("includes registerPluginRoute with --with-routes", () => {
     const out = indexTemplate("greeter", { withRoutes: true });
     assert.ok(out.includes("registerPluginRoute"), "must include route registration");
+    assert.ok(
+      out.includes('from "jsr:@ursamu/mush"'),
+      "route import must come from @ursamu/mush"
+    );
   });
 
-  it("imports registerHelpDir from help-plugin", () => {
+  it("imports registerHelpDir from @ursamu/help", () => {
     const out = indexTemplate("greeter");
     assert.ok(out.includes("registerHelpDir"), "must import registerHelpDir");
-    assert.ok(out.includes("jsr:@ursamu/help-plugin"), "must use jsr:@ursamu/help-plugin");
+    assert.ok(out.includes("jsr:@ursamu/help"), "must use jsr:@ursamu/help");
+    assert.ok(!out.includes("help-plugin"), "must not use legacy help-plugin path");
   });
 
   it("calls registerHelpDir in init()", () => {
@@ -105,9 +111,10 @@ describe("commandsTemplate", () => {
     assert.ok(!out.includes("init:"), "commands.ts should not have init:");
   });
 
-  it("uses jsr:@ursamu/ursamu import", () => {
+  it("uses jsr:@ursamu/mush import", () => {
     const out = commandsTemplate("mail");
-    assert.ok(out.includes("jsr:@ursamu/ursamu"), "must use jsr: prefix");
+    assert.ok(out.includes("jsr:@ursamu/mush"), "must use modern engine import");
+    assert.ok(!out.includes("jsr:@ursamu/ursamu"), "must not use legacy engine import");
   });
 });
 
@@ -203,6 +210,12 @@ describe("mockUTemplate", () => {
   it("includes canEdit mock", () => {
     const out = mockUTemplate();
     assert.ok(out.includes("canEdit"), "must include canEdit mock");
+  });
+
+  it("uses jsr:@ursamu/mush for IUrsamuSDK", () => {
+    const out = mockUTemplate();
+    assert.ok(out.includes("jsr:@ursamu/mush"), "must import types from @ursamu/mush");
+    assert.ok(!out.includes("jsr:@ursamu/ursamu"), "must not use legacy engine import");
   });
 });
 

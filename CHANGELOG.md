@@ -34,6 +34,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   official package import examples; link the package catalog.
 - **Scaffold help / docs / CLI examples** — use `greeter` / `faction-board`
   instead of `bbs` / `mail` as sample names.
+- **Scaffold templates use modern imports** — `jsr:@ursamu/mush` (engine) and
+  `jsr:@ursamu/help` instead of legacy `jsr:@ursamu/ursamu` /
+  `jsr:@ursamu/help-plugin`.
 
 ---
 

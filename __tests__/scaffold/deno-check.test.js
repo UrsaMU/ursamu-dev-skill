@@ -43,15 +43,16 @@ const DENO = denoVersion();
  *     and work even before the import map is configured.
  *
  * nodeModulesDir "auto" — lets Deno resolve npm deps (e.g. lodash inside
- *   @ursamu/ursamu) without a pre-existing node_modules directory.
+ *   @ursamu/mush) without a pre-existing node_modules directory.
  *
- * The "imports" map stubs @ursamu/help-plugin locally so deno check can
- * type-check index.ts even when the package has not been published to JSR yet.
+ * The "imports" map stubs @ursamu/help (and a thin mush types stub) locally so
+ * deno check can type-check scaffold output without hitting JSR.
  */
 const DENO_JSON = JSON.stringify({
   nodeModulesDir: "auto",
   imports: {
-    "jsr:@ursamu/help-plugin": "./stubs/help-plugin.ts",
+    "jsr:@ursamu/help": "./stubs/help.ts",
+    "jsr:@ursamu/mush": "./stubs/mush.ts",
   },
   lint: {
     rules: {
@@ -60,8 +61,26 @@ const DENO_JSON = JSON.stringify({
   },
 }, null, 2);
 
-/** Minimal stub for @ursamu/help-plugin — satisfies the import at type-check time. */
-const HELP_PLUGIN_STUB = `export function registerHelpDir(_dir: string, _plugin: string): void {}\n`;
+/** Minimal stub for @ursamu/help — satisfies the import at type-check time. */
+const HELP_STUB = `export function registerHelpDir(_dir: string, _plugin: string): void {}\n`;
+
+/** Minimal stub for @ursamu/mush — engine types/APIs used by scaffold templates. */
+const MUSH_STUB = `export type IPlugin = {
+  name: string;
+  version: string;
+  description?: string;
+  init?: () => boolean | Promise<boolean>;
+  remove?: () => void | Promise<void>;
+};
+export type IUrsamuSDK = {
+  cmd: { args: string[] };
+  send: (m: string) => void;
+  util: { stripSubs: (s: string) => string };
+};
+export function addCmd(_cmd: unknown): void {}
+export function registerPluginRoute(_path: string, _handler: unknown): void {}
+export function gameHooks(): void {}
+`;
 
 function writeFiles(dir, files) {
   for (const [rel, content] of Object.entries(files)) {
@@ -90,7 +109,8 @@ function buildTmpDir() {
   const dir = mkdtempSync(join(tmpdir(), "ursamu-scaffold-"));
   writeFiles(dir, {
     "deno.json":                     DENO_JSON,
-    "stubs/help-plugin.ts":          HELP_PLUGIN_STUB,
+    "stubs/help.ts":                 HELP_STUB,
+    "stubs/mush.ts":                 MUSH_STUB,
     "index.ts":                      indexTemplate("greeter"),
     "commands.ts":                   commandsTemplate("greeter"),
     "routes.ts":                     routesTemplate("greeter"),
