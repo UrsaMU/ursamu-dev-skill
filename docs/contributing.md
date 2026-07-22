@@ -6,6 +6,7 @@
 |-----------|----------|
 | Skill content | `skill/SKILL.md` |
 | API reference | `skill/references/api-reference.md` |
+| Official packages catalog | `skill/references/official-packages.md` (refresh when `ursamu/packages/*` changes) |
 | Skill installer + hook installer | `bin/cli.js`, `lib/hooks.js` |
 | Static audit checks | `lib/audit/checks.js` |
 | Audit runner | `lib/audit/runner.js` |

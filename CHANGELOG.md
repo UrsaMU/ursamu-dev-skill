@@ -5,6 +5,30 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- **`skill/references/official-packages.md`** — catalog of first-party monorepo
+  packages (`@ursamu/mail`, `@ursamu/bbs`, `@ursamu/combat`, `@ursamu/jobs`,
+  `@ursamu/channels`, `@ursamu/help`, `@ursamu/builder`, `@ursamu/wiki`,
+  combat-backed TTRPG systems, ai-gm, discord, map, vendor, lang, …). Includes
+  reuse-before-invent rules, load-order notes, combat `CombatPorts` pattern,
+  and a decision cheat-sheet so agents stop scaffolding features that already
+  ship as packages.
+
+### Changed
+
+- **SKILL.md** — triggers and quick index point at official packages; scaffold
+  section requires checking the catalog first; engine target notes
+  `@ursamu/mush` alongside legacy `@ursamu/ursamu`.
+- **Stage 0** — `PKG:` line required on design plans; questions cover official
+  package reuse, peers, and load order.
+- **Stage 1 / api-reference** — prefer `jsr:@ursamu/mush` imports; document
+  official package import examples; link the package catalog.
+
+---
+
 ## [2.1.0] — 2026-05-12
 
 ### Added (after 2.1.0)

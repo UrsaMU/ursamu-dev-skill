@@ -12,9 +12,10 @@ Your role: design facilitator. Slow down just enough to get it right.
 
 Before asking any questions:
 1. Open `api-reference.md` — review the relevant sections for the feature being designed (SDK methods, event payloads, lock expressions, plugin patterns)
-2. Read relevant files in `src/commands/`, `src/plugins/`, `system/scripts/`
-3. Identify what is being proposed vs. what already exists
-4. Note implicit constraints (lock levels, sandbox restrictions, existing DB schemas)
+2. **Open `official-packages.md`** — check whether mail, bbs, jobs, channels, help, builder, wiki, combat, events, scene, discord, vendor, lang, map, or a TTRPG system plugin already covers the request. If yes, the design should be *install / configure / extend that package*, not a greenfield plugin.
+3. Read relevant files in `src/commands/`, `src/plugins/`, monorepo `packages/*`, `system/scripts/`
+4. Identify what is being proposed vs. what already exists (including installed official packages and `plugins.manifest.json`)
+5. Note implicit constraints (lock levels, sandbox restrictions, existing DB schemas, package peer deps and load order)
 
 ### 0b. Clarify requirements (one question at a time)
 
@@ -23,14 +24,16 @@ Ask one targeted question per message — prefer multiple-choice. Resolve all of
 | Question | Why it matters |
 |----------|---------------|
 | What is the feature? | Shapes command name, pattern, lock |
-| Native command, plugin, or system script? | Determines available APIs |
+| Does an **official package** already do this? | Avoid reinventing mail/bbs/jobs/combat/… — see `official-packages.md` |
+| Native command, thin adapter plugin, full new plugin, or system script? | Determines available APIs and whether to `registerCombatPorts` / hooks vs. scaffold |
 | What inputs? (args, switches) | Drives the regex pattern |
 | What lock level? | `connected`, `builder+`, `admin+`, `wizard` |
-| Which DB collections? | Plan DBO schemas upfront |
-| Which `gameHooks` events? | Plugin `init`/`remove` wiring |
+| Which DB collections? | Plan DBO schemas upfront — reuse package collections when extending |
+| Which `gameHooks` / package hooks? | Plugin `init`/`remove` wiring (`jobHooks`, `eventHooks`, `combat:decide`, …) |
 | Which REST routes? | Auth requirement, method, path |
 | Side-effects on other objects? | Requires `canEdit` + null guards |
 | Performance / scale expectations? | Informs whether to cache, paginate, or batch |
+| Package load order / peers? | e.g. help → mail → jobs → bbs; combat before TTRPG system |
 
 ### 0c. Identify domain invariants (DDD lens)
 
@@ -57,6 +60,7 @@ Stage 1 writes files that Stage 2 then attacks; if the plan is wrong, both stage
 ```
 ## Design Plan: <feature name>
 
+PKG:   <reuse @ursamu/… | extend @ursamu/… via <API> | new plugin <name>>  (required)
 CMD:   <+name>(<lock>) | <+name/switch>(<lock>) | args:[<sw>,<rest>]
 DB:    <plugin>.<collection>.<field> | <$set,$inc,$unset>  (or: none)
 HOOKS: <event>→<handlerName>(<purpose>)  (or: none)
@@ -64,6 +68,8 @@ REST:  <METHOD> /api/v1/<path>(auth:<yes|no>)  (or: none)
 INV:   <invariant> | <invariant>  (rules that must always hold)
 DEC:   <chosen>><alt>(<rationale> ★N) | ...
 ```
+
+`PKG` must cite `official-packages.md`. If the answer is a new plugin, state why no official package fits.
 
 AAAK key: `conn`=connected · `build+`=builder+ · `adm+`=admin+ · `wiz`=wizard · `★1`=minor · `★★★`=important · `★★★★★`=critical
 

@@ -1,26 +1,28 @@
 ---
 name: ursamu-dev
-description: "UrsaMU (TypeScript MUSH engine, @ursamu/ursamu ≥ 2.3.4) plugin, command, system-script, and REST development. Use when working with `addCmd`, `IPlugin`, `u.db`, `gameHooks`, `DBO`, `registerPluginRoute`, or files under `src/plugins/` / `src/commands/` / `system/scripts/`. Not for RhostMUSH/PennMUSH/TinyMUX softcode (see mush-architect / mush-natural). Six-stage workflow: design → generate → audit → refine → test → docs, with /tdd-audit integration."
+description: "UrsaMU (TypeScript MUSH engine, @ursamu/mush / @ursamu/ursamu ≥ 2.3.4) plugin, command, system-script, and REST development. Use when working with `addCmd`, `IPlugin`, `u.db`, `gameHooks`, `DBO`, `registerPluginRoute`, official packages (@ursamu/mail, @ursamu/bbs, @ursamu/combat, @ursamu/jobs, …), or files under `src/plugins/` / `packages/*` / `src/commands/` / `system/scripts/`. Not for RhostMUSH/PennMUSH/TinyMUX softcode (see mush-architect / mush-natural). Six-stage workflow: design → generate → audit → refine → test → docs, with /tdd-audit integration."
 risk: low
 source: local
 date_added: "2026-03-22"
-updated: "2026-05-12"
-engine_target: "@ursamu/ursamu ≥ 2.3.4"
+updated: "2026-07-22"
+engine_target: "@ursamu/mush ≥ 0.1 / @ursamu/ursamu ≥ 2.3.4"
 ---
 
 ## Use this skill when
 
 - Writing or modifying UrsaMU **commands** (`addCmd`), **plugins** (`IPlugin`), or **system scripts**
 - Designing **DBO collections**, **REST routes** (`registerPluginRoute`), or **gameHooks** wiring
+- Installing, configuring, or **extending official packages** (`@ursamu/mail`, `@ursamu/bbs`, `@ursamu/combat`, `@ursamu/jobs`, …)
+- Working under monorepo `packages/*` or game `src/plugins/`
 - Reviewing UrsaMU TypeScript for correctness, security, or style
 - Writing **Deno tests** or **plugin docs** for any of the above
-- Any task referencing `jsr:@ursamu/ursamu` or files under `src/plugins/`, `src/commands/`, `system/scripts/`
+- Any task referencing `jsr:@ursamu/mush`, `jsr:@ursamu/ursamu`, or `@ursamu/*` packages
 
 ## Do not use this skill when
 
 - Working on RhostMUSH / PennMUSH / TinyMUX softcode — that's [`mush-architect`](https://github.com/UrsaMU) territory
 - Working on non-UrsaMU TypeScript/Deno projects
-- The task is purely about the Discord bot
+- The task is purely about Discord bot code **outside** `@ursamu/discord`
 
 ---
 
@@ -29,6 +31,34 @@ engine_target: "@ursamu/ursamu ≥ 2.3.4"
 `references/api-reference.md` is the authoritative source for every UrsaMU type, method signature, import path, event payload, and pattern. It mirrors the engine's `docs/llms.md` with a "v2.x Additions" appendix for APIs not yet in the generated reference.
 
 Read it before writing code. Your training data is stale; SDK shapes drift between minor versions. If anything in the stage references conflicts with `api-reference.md`, the API reference wins.
+
+---
+
+## Prefer official packages over new plugins
+
+Before scaffolding or designing a greenfield plugin, open
+[references/official-packages.md](references/official-packages.md).
+
+UrsaMU already ships first-party packages for common MUSH features and
+shared engines:
+
+| Need | Package |
+|------|---------|
+| Engine APIs | `@ursamu/mush` (re-exports `@ursamu/core`) |
+| Help | `@ursamu/help` |
+| Channels | `@ursamu/channels` |
+| Mail | `@ursamu/mail` |
+| BBS | `@ursamu/bbs` |
+| Jobs / requests | `@ursamu/jobs` |
+| Builder verbs | `@ursamu/builder` |
+| Wiki | `@ursamu/wiki` |
+| Combat turns / AI | `@ursamu/combat` (+ system ports) |
+| Events / scenes / Discord | `@ursamu/events`, `@ursamu/scene`, `@ursamu/discord` |
+| TTRPG systems | `@ursamu/cofd-plugin`, `dnd-plugin`, `cyberpunk-plugin`, `sw5e-plugin`, … |
+
+**Reuse or extend** those packages. Scaffold only when nothing fits.
+Game-system work usually means implementing `CombatPorts` on `@ursamu/combat`,
+not rewriting initiative.
 
 ---
 
@@ -53,7 +83,10 @@ Worked end-to-end example: [references/example-gold.md](references/example-gold.
 
 ## Scaffold before designing (new plugins only)
 
-If creating a new plugin and the directory does not yet exist, run this in your terminal before Stage 0:
+**First:** confirm [official-packages.md](references/official-packages.md) has no
+matching package. If it does, install/configure that package instead of scaffolding.
+
+If creating a genuinely new plugin and the directory does not yet exist, run this in your terminal before Stage 0:
 
 ```bash
 npx @lhi/ursamu-dev scaffold <name> [--with-routes] [--with-tests]
@@ -71,6 +104,7 @@ If the plugin already exists, skip and go straight to Stage 0.
 
 | Topic | Section |
 |-------|---------|
+| **Official packages (mail, bbs, combat, …)** | [references/official-packages.md](references/official-packages.md) |
 | All `u.*` methods | `IUrsamuSDK`, `u.db`, `u.util`, `u.chan`, `u.bb`, `u.auth`, `u.sys`, `u.mail`, `u.ui`, `u.events` |
 | Types & interfaces | `IDBObj`, `ICmd`, `IPlugin`, `IUrsamuSDK` |
 | `gameHooks` events + payloads | `GameHooks — Engine Event Bus` |
@@ -104,5 +138,6 @@ Subagents do **not** inherit this skill's context. If you spawn one for any stag
 
 - This SKILL.md is intentionally thin (~150 lines). Each stage's full guidance lives in `references/stage-N-*.md` — load only the active stage to control token cost.
 - `references/api-reference.md` is the single source of truth for SDK shapes; soft-stated APIs in this skill must always defer to it.
+- `references/official-packages.md` is the catalog of first-party `@ursamu/*` packages; refresh it when monorepo `packages/*` gains members.
 - The `evals/` directory holds should-trigger / should-not-trigger prompts. Run them when changing the description above.
 - The `hooks/` directory holds optional PreToolUse stage-gate scripts. Install via `npx @lhi/ursamu-dev --install-hooks`.

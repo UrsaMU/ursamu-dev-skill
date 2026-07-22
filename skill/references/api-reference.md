@@ -2,6 +2,9 @@
 
 > Machine-optimized reference for code generation. Covers all public APIs,
 > types, patterns, and conventions. For human-readable guides see docs/guides/.
+>
+> **Official feature packages** (mail, bbs, combat, jobs, channels, …) live in
+> [official-packages.md](official-packages.md) — check there before scaffolding.
 ---
 
 ## Overview
@@ -9,28 +12,34 @@
 UrsaMU is a TypeScript/Deno MUSH-style multiplayer game server. Key characteristics:
 
 - Runtime: **Deno** with Deno KV storage
-- Public package: **`jsr:@ursamu/ursamu`**
+- Public engine package: **`jsr:@ursamu/mush`** (preferred; re-exports `@ursamu/core`)
+- Legacy / alias package: **`jsr:@ursamu/ursamu`** (still common in older games and scaffolds)
+- First-party feature packages: **`jsr:@ursamu/mail`**, **`@ursamu/bbs`**, **`@ursamu/combat`**, **`@ursamu/jobs`**, **`@ursamu/help`**, … — see [official-packages.md](official-packages.md)
 - Scripts run in isolated **Web Workers** (no Deno APIs, no network, no filesystem)
 - Commands registered with `addCmd()` run in native Deno context (full APIs available)
 - Configuration in `config/` — JSON or TOML
-- Plugins in `src/plugins/<name>/` — auto-discovered at startup
+- Plugins in `src/plugins/<name>/` or monorepo `packages/<name>/` — loaded at startup / via manifest
 - System scripts in `system/scripts/` — one file per command, auto-registered
 ---
 
 ## Import Paths
 
 ```typescript
-// All public APIs
+// Preferred engine import (new code)
 import {
   addCmd, registerPluginRoute, mu, createObj, DBO, dbojs, gameHooks
-} from "jsr:@ursamu/ursamu";
+} from "jsr:@ursamu/mush";
 
-// Types (zero runtime cost)
 import type {
   ICmd, IPlugin, IDBObj, IUrsamuSDK,
   SayEvent, PoseEvent, PageEvent, MoveEvent, SessionEvent,
   ChannelMessageEvent, SceneCreatedEvent, ScenePoseEvent,
   SceneSetEvent, SceneTitleEvent, SceneClearEvent,
+} from "jsr:@ursamu/mush";
+
+// Legacy alias — equivalent on many installs; match the host deno.json
+import {
+  addCmd, registerPluginRoute, mu, createObj, DBO, dbojs, gameHooks
 } from "jsr:@ursamu/ursamu";
 ```
 

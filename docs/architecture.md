@@ -62,6 +62,7 @@ do not register `+help`, `@dig`, or `+channel` names).
 │   ├── SKILL.md                     # thin router (v2.1.0 split)
 │   ├── references/
 │   │   ├── api-reference.md         # authoritative UrsaMU SDK reference
+│   │   ├── official-packages.md     # first-party @ursamu/* package catalog
 │   │   ├── stage-0-design.md
 │   │   ├── stage-1-generate.md
 │   │   ├── stage-2-audit.md

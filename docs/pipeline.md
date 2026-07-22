@@ -25,8 +25,10 @@ compose — it does not restate the checklists.
 
 ## Stage 0 — Design
 
-The agent reads `skill/references/api-reference.md` and existing source before
-asking targeted clarifying questions, then produces a Design Plan that must be
+The agent reads `skill/references/api-reference.md`,
+`skill/references/official-packages.md` (reuse mail/bbs/combat/jobs/… before
+scaffolding), and existing source before asking targeted clarifying questions,
+then produces a Design Plan (including a required `PKG:` line) that must be
 confirmed before Stage 1 writes any files.
 
 ### Optional PreToolUse stage-gate

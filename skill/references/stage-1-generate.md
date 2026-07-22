@@ -12,11 +12,17 @@ Write code satisfying the confirmed Design Plan using the patterns below.
 > used below. The snippets in this section are *quick reminders*, not
 > substitutes — always verify against the reference before writing final code.
 
+> **If the Design Plan’s `PKG` line reuses an official package**, open
+> `references/official-packages.md` and implement against that package’s
+> public API (hooks, `registerCombatPorts`, `registerHelpDir`, …). Do not
+> copy package internals into `src/plugins/`.
+
 ### Project layout
 
 ```
 src/commands/        Native addCmd (Deno context, full APIs)
 src/plugins/<name>/  Plugin — index.ts exports IPlugin, commands.ts has addCmd
+packages/<name>/     Monorepo first-party packages (@ursamu/*) — prefer editing here when in-tree
 system/scripts/      Sandbox scripts — one file per command, no Deno/net/fs APIs
 ```
 
@@ -26,14 +32,24 @@ system/scripts/      Sandbox scripts — one file per command, no Deno/net/fs AP
 - **No function longer than 50 lines** — decompose into named helpers
 - **No file longer than 200 lines** — split into modules
 - **Domain-specific names** — never `utils`, `helpers`, `misc`
-- **Library-first** — if the SDK already does it, use the SDK; don't rewrite
+- **Library-first** — if the SDK or an official package already does it, use it; don't rewrite
 - **No deep nesting** — max 3 levels
 - **Typed catch blocks** — `catch (e: unknown)` not bare `catch`
 
 ### Always use the correct import
 
 ```typescript
-// Public package (outside src/)
+// Preferred engine import for new code
+import { addCmd, DBO, gameHooks, registerPluginRoute } from "jsr:@ursamu/mush";
+import type { ICmd, IPlugin, IDBObj, IUrsamuSDK } from "jsr:@ursamu/mush";
+
+// Official feature packages (see official-packages.md)
+import { registerHelpDir } from "jsr:@ursamu/help";
+import { registerCombatPorts } from "jsr:@ursamu/combat";
+import { jobHooks } from "jsr:@ursamu/jobs";
+import mailPlugin from "jsr:@ursamu/mail";
+
+// Legacy alias still seen in older games / scaffolds
 import { addCmd, DBO, gameHooks, registerPluginRoute } from "jsr:@ursamu/ursamu";
 import type { ICmd, IPlugin, IDBObj, IUrsamuSDK } from "jsr:@ursamu/ursamu";
 
