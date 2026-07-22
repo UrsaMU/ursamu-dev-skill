@@ -17,7 +17,7 @@ After writing code, internally verify every item. Output the full **Audit Report
 - [ ] **Sandbox safety** — `system/scripts/` must not reference Deno, fetch, or any non-`u` global
 - [ ] **Color reset** — all colored strings end with `%cn`
 - [ ] **Correct op string** — `u.db.modify` third arg is `"$set"` | `"$unset"` | `"$inc"` only
-- [ ] **Import path** — internal plugins use relative imports; external use `jsr:@ursamu/ursamu`
+- [ ] **Import path** — internal plugins use relative imports; external use `jsr:@ursamu/*` (mush, mail, bbs, combat, …) or a matching `deno.json` imports map entry
 - [ ] **Help text** — `help:` field on every `addCmd` with: (1) syntax line, (2) Switches section if any switches exist, (3) at least two Examples
 - [ ] **Help file** — `help/<name>.md` exists for every command and `init()` calls `registerHelpDir()` (plugins only)
 - [ ] **Plugin phase discipline** — `addCmd()` calls are in `commands.ts` (module-load), never inside `init()`

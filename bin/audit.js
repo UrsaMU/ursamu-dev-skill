@@ -103,7 +103,7 @@ Arguments:
 
 Options:
   --fix              Auto-repair fixable violations in-place:
-                       check-09  adds missing jsr: import prefix
+                       check-09  adds jsr: prefix to bare @ursamu/* imports
                        check-15  inserts return true; into init()
                      Structural violations still require manual fixes.
   --watch            Watch src directory and re-run audit on every save.
@@ -123,7 +123,7 @@ Checks performed (no LLM required):
   check-06  Sandbox safety       — no Deno/fetch in scripts/            [error]
   check-07  Color reset          — colored strings end with %cn         [warn]
   check-08  Op string whitelist  — only $set/$inc/$unset permitted      [error]
-  check-09  Import path          — jsr: prefix on @ursamu pkg           [warn]  ✓ fixable
+  check-09  Import path          — jsr: prefix on any @ursamu/* pkg     [warn]  ✓ fixable
   check-10  Help text            — every addCmd has help+Examples       [error/warn]
   check-11  Phase discipline     — no addCmd() inside init()            [error]
   check-12  gameHooks pairing    — every on() has off() in remove       [error]

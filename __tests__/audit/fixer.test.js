@@ -92,6 +92,39 @@ describe("applyFixesToLines check-09", () => {
     assert.ok(!out[0].includes('"@ursamu/ursamu"'), "must remove bare import");
   });
 
+  it("replaces bare @ursamu/mush and feature packages", () => {
+    const lines = [
+      `import { addCmd } from "@ursamu/mush";`,
+      `import mail from "@ursamu/mail";`,
+      `import { registerCombatPorts } from '@ursamu/combat';`,
+    ];
+    const violations = [
+      { file: "/f.ts", line: 1, check: "check-09", level: "warn", message: "" },
+      { file: "/f.ts", line: 2, check: "check-09", level: "warn", message: "" },
+      { file: "/f.ts", line: 3, check: "check-09", level: "warn", message: "" },
+    ];
+    const { lines: out, applied } = applyFixesToLines(lines, violations);
+    assert.equal(applied, 3);
+    assert.equal(out[0], `import { addCmd } from "jsr:@ursamu/mush";`);
+    assert.equal(out[1], `import mail from "jsr:@ursamu/mail";`);
+    assert.equal(out[2], `import { registerCombatPorts } from 'jsr:@ursamu/combat';`);
+  });
+
+  it("fixes bare subpath and side-effect imports", () => {
+    const lines = [
+      `import x from "@ursamu/mush/app";`,
+      `import "@ursamu/help";`,
+    ];
+    const violations = [
+      { file: "/f.ts", line: 1, check: "check-09", level: "warn", message: "" },
+      { file: "/f.ts", line: 2, check: "check-09", level: "warn", message: "" },
+    ];
+    const { lines: out, applied } = applyFixesToLines(lines, violations);
+    assert.equal(applied, 2);
+    assert.equal(out[0], `import x from "jsr:@ursamu/mush/app";`);
+    assert.equal(out[1], `import "jsr:@ursamu/help";`);
+  });
+
   it("does not mutate the original lines array", () => {
     const lines = [`import { x } from "@ursamu/ursamu";`];
     const original = lines[0];

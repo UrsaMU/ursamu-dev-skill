@@ -37,7 +37,7 @@ ursamu-audit --no-hints        # suppress informational findings
 | check-03 | `u.db.modify` op is `$set`/`$inc`/`$unset` only | error | |
 | check-04 | `util.target()` result is null-guarded before use | hint | |
 | check-06 | No `Deno`/`fetch`/`require` in `system/scripts/` | error | |
-| check-09 | `@ursamu/ursamu` imports use `jsr:` prefix | warn | ✓ |
+| check-09 | Any bare `@ursamu/*` import uses `jsr:` prefix (or is mapped in `deno.json`) | warn | ✓ |
 | check-10 | Every `addCmd` has `help:` with an Examples section | error/warn | |
 | check-11 | No `addCmd()` calls inside `init()` | error | |
 | check-12 | Every `gameHooks.on()` has a matching `gameHooks.off()` in `remove()` | error | |
@@ -63,7 +63,7 @@ Reads each violating file, applies safe in-place patches, re-runs the full audit
 
 | Check | Transformation |
 |-------|---------------|
-| check-09 | `from "@ursamu/ursamu"` → `from "jsr:@ursamu/ursamu"` |
+| check-09 | `from "@ursamu/<pkg>"` → `from "jsr:@ursamu/<pkg>"` (mush, mail, bbs, combat, …) |
 | check-15 | Inserts `return true;` before the closing `}` of `init()` with correct indentation |
 
 **Sample output:**

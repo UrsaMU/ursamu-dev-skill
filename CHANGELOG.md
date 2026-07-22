@@ -37,6 +37,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Scaffold templates use modern imports** — `jsr:@ursamu/mush` (engine) and
   `jsr:@ursamu/help` instead of legacy `jsr:@ursamu/ursamu` /
   `jsr:@ursamu/help-plugin`.
+- **Audit check-09 covers all `@ursamu/*` packages** — flags bare imports of
+  mush, core, mail, bbs, combat, jobs, help, channels, and any other
+  `@ursamu/…` specifier (including subpaths). Per-specifier skip when the
+  nearest `deno.json` imports map already defines the bare name. `--fix`
+  prefixes any bare `@ursamu/*` with `jsr:`.
 
 ---
 

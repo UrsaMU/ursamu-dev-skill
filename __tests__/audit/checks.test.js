@@ -6,6 +6,9 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { mkdtempSync, writeFileSync, rmSync } from "fs";
+import { join } from "path";
+import { tmpdir } from "os";
 import {
   checkAtomicDbWrites,
   checkSandboxSafety,
@@ -97,16 +100,97 @@ describe("check-06 checkSandboxSafety", () => {
 // ── check-09 — Import path ───────────────────────────────────────────────────
 
 describe("check-09 checkImportPath", () => {
-  it("passes for jsr: prefixed import", () => {
-    const v = checkImportPath(lines(`import { addCmd } from "jsr:@ursamu/ursamu";`), FILE);
+  it("passes for jsr: prefixed engine import", () => {
+    const v = checkImportPath(lines(`import { addCmd } from "jsr:@ursamu/mush";`), FILE);
     assert.equal(v.length, 0);
   });
 
-  it("fails for missing jsr: prefix", () => {
+  it("passes for jsr: prefixed feature package", () => {
+    const v = checkImportPath(lines(`import mail from "jsr:@ursamu/mail";`), FILE);
+    assert.equal(v.length, 0);
+  });
+
+  it("fails for bare @ursamu/ursamu", () => {
     const v = checkImportPath(lines(`import { addCmd } from "@ursamu/ursamu";`), FILE);
     assert.equal(v.length, 1);
     assert.equal(v[0].check, "check-09");
     assert.equal(v[0].level, "warn");
+    assert.match(v[0].message, /@ursamu\/ursamu/);
+  });
+
+  it("fails for bare @ursamu/mush", () => {
+    const v = checkImportPath(lines(`import { addCmd } from "@ursamu/mush";`), FILE);
+    assert.equal(v.length, 1);
+    assert.match(v[0].message, /@ursamu\/mush/);
+    assert.match(v[0].message, /jsr:@ursamu\/mush/);
+  });
+
+  it("fails for bare feature packages (mail, bbs, combat, jobs, help)", () => {
+    const src = [
+      `import mail from "@ursamu/mail";`,
+      `import bbs from "@ursamu/bbs";`,
+      `import { registerCombatPorts } from "@ursamu/combat";`,
+      `import { jobHooks } from "@ursamu/jobs";`,
+      `import { registerHelpDir } from "@ursamu/help";`,
+    ].join("\n");
+    const v = checkImportPath(lines(src), FILE);
+    assert.equal(v.length, 5);
+    assert.ok(v.every(x => x.check === "check-09"));
+  });
+
+  it("fails for bare subpath imports", () => {
+    const v = checkImportPath(lines(`import x from "@ursamu/mush/app";`), FILE);
+    assert.equal(v.length, 1);
+    assert.match(v[0].message, /@ursamu\/mush\/app/);
+  });
+
+  it("flags side-effect import of bare @ursamu package", () => {
+    const v = checkImportPath(lines(`import "@ursamu/mail";`), FILE);
+    assert.equal(v.length, 1);
+  });
+
+  it("does not flag non-ursamu bare imports", () => {
+    const v = checkImportPath(lines(`import { assertEquals } from "@std/assert";`), FILE);
+    assert.equal(v.length, 0);
+  });
+
+  it("skips bare imports mapped in nearest deno.json", () => {
+    const dir = mkdtempSync(join(tmpdir(), "ursamu-audit-map-"));
+    try {
+      writeFileSync(join(dir, "deno.json"), JSON.stringify({
+        imports: {
+          "@ursamu/mail": "jsr:@ursamu/mail@^2.4.0",
+          "@ursamu/mush": "./mush/mod.ts",
+        },
+      }));
+      const filePath = join(dir, "plugin.ts");
+      writeFileSync(filePath, "export {};\n");
+      const src = [
+        `import mail from "@ursamu/mail";`,
+        `import { addCmd } from "@ursamu/mush";`,
+        `import bbs from "@ursamu/bbs";`,
+      ].join("\n");
+      const v = checkImportPath(lines(src), filePath);
+      assert.equal(v.length, 1, "only unmapped @ursamu/bbs should warn");
+      assert.match(v[0].message, /@ursamu\/bbs/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("skips bare subpath when package root is mapped", () => {
+    const dir = mkdtempSync(join(tmpdir(), "ursamu-audit-map-sub-"));
+    try {
+      writeFileSync(join(dir, "deno.json"), JSON.stringify({
+        imports: { "@ursamu/mush": "jsr:@ursamu/mush@^0.1.0" },
+      }));
+      const filePath = join(dir, "plugin.ts");
+      writeFileSync(filePath, "export {};\n");
+      const v = checkImportPath(lines(`import x from "@ursamu/mush/app";`), filePath);
+      assert.equal(v.length, 0);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 
